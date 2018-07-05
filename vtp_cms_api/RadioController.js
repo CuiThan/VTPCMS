@@ -17,7 +17,7 @@ var bcrypt = require('bcryptjs');
 var config = require('../config'); // get config file
 
 
-router.post('/get--active-radio',VerifyToken, function(req, resp) {
+router.get('/active-radio',VerifyToken, function(req, resp) {
     /*RadioSchedule.findOne({ status: 1, publicDate : {$gte: Date.now} }, function (err, schedules) {
         if (err) return res.status(500).send('Error on the server.');
         if (!schedules) return res.status(404).send('No schedule found.');
@@ -29,7 +29,7 @@ router.post('/get--active-radio',VerifyToken, function(req, resp) {
         title: "Radio 1",
         radioUrl: "http://125.212.238.119:8001/"
     };
-    res.status(200).send({ status: "OK", radio: activeRadio });
+    resp.status(200).send({ status: "OK", radio: activeRadio });
 });
 
 module.exports = router;
