@@ -31,8 +31,10 @@ app.use('/api/post', PostController);
 var UserController  = require(__root + 'vtp_cms_api/UserController');
 app.use('/api/user', UserController);
 
-// var MyVTPAPI = require(__root + 'myvtp_api/MyVTPController');
-// app.use('/api/myvtp', MyVTPAPI);
+var CMSAPI = require(__root + 'vtp_cms_api/WebController');
+app.use('/api/cms', CMSAPI);
 
+var RadioAPI = require(__root + 'vtp_cms_api/RadioController');
+app.use('/api/radio', RadioAPI);
 
 module.exports = app;

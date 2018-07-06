@@ -21,11 +21,9 @@
     "http-errors": "~1.6.2",
     "joi": "^13.3.0",
     "jsonwebtoken": "^8.2.1",
-    "kafka-node": "^2.6.1",
     "list": "^2.0.13",
     "mongoose": "^4.8.5",
     "morgan": "~1.9.0",
-    "node-gyp": "^3.6.2",
     "request": "^2.85.0",
     "request-promise": "^4.2.2",
     "retry": "^0.12.0"
