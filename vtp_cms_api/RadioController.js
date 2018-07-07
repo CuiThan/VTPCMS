@@ -17,7 +17,7 @@ var bcrypt = require('bcryptjs');
 var config = require('../config'); // get config file
 
 
-router.get('/active-radio',VerifyToken, function(req, resp) {
+router.get('/active-radio', VerifyToken.verifyAppToken, function(req, resp) {
     /*RadioSchedule.findOne({ status: 1, publicDate : {$gte: Date.now} }, function (err, schedules) {
         if (err) return res.status(500).send('Error on the server.');
         if (!schedules) return res.status(404).send('No schedule found.');

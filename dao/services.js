@@ -1,6 +1,6 @@
 var mongoose = require('mongoose');
 var ServicesSchema = new mongoose.Schema({
-   servicesId : String,
+   serviceId : String,
    name : String,
    logo : String,
    description : String,
