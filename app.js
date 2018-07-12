@@ -1,12 +1,15 @@
 var express = require('express');
 var app = express();
 var cors = require('cors');
+var path = require('path');
 var db = require('./db');
 global.__root   = __dirname + '/';
 
 app.get('/api', function (req, res) {
   res.status(200).send('API works.................');
 });
+
+app.use(express.static(path.join(__root, 'public')));
 
 app.use(cors());
 
@@ -30,6 +33,9 @@ app.use('/api/post', PostController);
 
 var UserController  = require(__root + 'vtp_cms_api/UserController');
 app.use('/api/user', UserController);
+
+var NoteController  = require(__root + 'vtp_cms_api/NoteController');
+app.use('/api/note', NoteController);
 
 var CMSAPI = require(__root + 'vtp_cms_api/WebController');
 app.use('/api/cms', CMSAPI);

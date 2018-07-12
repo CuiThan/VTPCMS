@@ -106,15 +106,11 @@ router.post('/login', function(req, res) {
 
 router.post('/gettoken', function(req, res) {
       console.log(req.body);
-      if (req.body.appId == undefined)
-      {
-         res.status(200).send("AppId is required!!!");
-         return;
+      if (req.body.appId == undefined) {
+         return res.status(200).send({ auth: false, message: "AppId is required!!!" });
       }
-      if (req.body.secretKey == undefined)
-      {
-         res.status(200).send("SecretKey is required!!!");
-         return;
+      if (req.body.secretKey == undefined) {
+         return res.status(200).send({ auth: false, message: "SecretKey is required!!!" });
       }
 
       ClientApp.findOne({ appId: req.body.appId }, function (err, clientApp) {
@@ -123,7 +119,7 @@ router.post('/gettoken', function(req, res) {
 
       // check if the password is valid
       var passwordIsValid = bcrypt.compareSync(req.body.secretKey, clientApp.secretKey);
-      if (!passwordIsValid) return res.status(401).send({ auth: false, token: null });
+      if (!passwordIsValid) return res.status(401).send({ auth: false, token: null, message: "Wrong password" });
 
       // if user is found and password is valid
       // create a token
@@ -132,7 +128,7 @@ router.post('/gettoken', function(req, res) {
       });
 
       // return the information including token as JSON
-      res.status(200).send({ auth: true, token: token });
+      res.status(200).send({ auth: true, token: token, appId: req.body.appId });
   });
 
 });

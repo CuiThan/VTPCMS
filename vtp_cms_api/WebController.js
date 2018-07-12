@@ -2,10 +2,35 @@ var express = require('express');
 var Joi = require('joi');
 var router = express.Router();
 var bodyParser = require('body-parser');
+var multer = require('multer');
 var ValidateOrderStatus = require('../validation/order-status');
 var VerifyToken = require('../auth/VerifyToken');
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
+
+
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, '../VTPCMS/public/images')
+  },
+  filename: function (req, file, cb) {
+     console.log('file', file);
+    cb(null, Date.now() + '.' + file.mimetype.split('/')[1])
+  }
+});
+
+var mediaStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, '../VTPCMS/public/medias')
+  },
+  filename: function (req, file, cb) {
+     console.log('file', file);
+    cb(null, Date.now() + '.' + file.originalname.split('.')[1])
+  }
+});
+
+const upload = multer({ storage });
+const mediaUpoad = multer({ mediaStorage });
 
 var Services = require('../dao/services');
 
@@ -62,4 +87,26 @@ router.post('/get-services-by-id', VerifyToken.verifyAppToken, function(req, res
         };
     });
 });
+
+//Upload image
+
+router.post('/upload_image', VerifyToken.verifyAppToken, upload.single('file'), function (req, res) {
+   console.log(req.file);
+   if(req.file){
+      return res.status(200).send({ "message": " Upload image success", error: false, filename: req.file.filename });
+   }
+   res.status(500).send({ "message": "Can not connect to server", error: true });
+
+})
+
+router.post('/upload_media_file', VerifyToken.verifyAppToken, mediaUpoad.single('media_file'), function (req, res) {
+   console.log(req.file);
+   console.log('line 104');
+   if(req.file){
+      return res.status(200).send({ "message": " Upload image success", error: false, filename: req.file.filename });
+   }
+   res.status(500).send({ "message": "Can not connect to server", error: true });
+
+})
+
 module.exports = router;

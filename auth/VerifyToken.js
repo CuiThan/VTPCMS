@@ -13,7 +13,7 @@ module.exports = {
       jwt.verify(token, config.secret, function(err, decoded) {
          if (err)
             return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
-         console.log(decoded)
+         // console.log(decoded)
          // if everything is good, save to request for use in other routes
          req.clientAppId = decoded.id;
          // req.clientAppId = decoded.userId;
