@@ -9,7 +9,7 @@ router.use(bodyParser.json());
 
 router.post('/search', verify.verifyAppToken, function(req, res){
    var { bannerItemName, status } = req.body;
-   console.log(req.body);
+   // console.log(req.body);
    var searchQuery = {};
 
    if(status != undefined && status > 0){

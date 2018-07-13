@@ -130,24 +130,28 @@ router.post('/update', verify.verifyAppToken, function(req, res) {
    if(bodyRequest._id == undefined){
       return res.status(200).send({ message: 'Radio id is undefined', error: true });
    }
-   Radio.findOneAndUpdate({ _id:  bodyRequest._id }, {
-      title: bodyRequest.title,
-      status : bodyRequest.status,
-      mediaUrl: bodyRequest.mediaUrl,
-      description: bodyRequest.description,
-      updatedDate : new Date(),
-      updatedUserId : req.clientAppId
+   Radio.findOneAndUpdate({ _id:  bodyRequest._id },
+   {  $set: {
+         title: bodyRequest.title,
+         status : bodyRequest.status,
+         mediaUrl: bodyRequest.mediaUrl,
+         description: bodyRequest.description,
+         updatedDate : new Date(),
+         updatedUserId : req.clientAppId
+      }
    }, function( err, callback){
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if (callback == null)
          return res.status(200).send({ message: "Radio not exist", error: true });
       else {
-         RadioSchedule.update({ radioId:  bodyRequest._id }, {
-            title: bodyRequest.title,
-            status : bodyRequest.status,
-            description: bodyRequest.description,
-            // updatedDate : new Date(),
-            updatedUserId : req.clientAppId
+         RadioSchedule.update({ radioId:  bodyRequest._id },
+         { $set : {
+               title: bodyRequest.title,
+               status : bodyRequest.status,
+               description: bodyRequest.description,
+               // updatedDate : new Date(),
+               updatedUserId : req.clientAppId
+            }
          }, {multi: true}, function( err, callback){
             if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
             if (callback == null)
