@@ -11,7 +11,7 @@ router.use(bodyParser.json());
 
 // **************************REGISTER AGENCY**********************************
 router.post('/list_register_agency', verify.verifyAppToken, function (req, res) {
-   RegisterAgency.find({}, function( err, agency) {
+   RegisterAgency.find().exec(function( err, agency) {
       if(err) return res.status(500).send({ message: 'Can not connect to server', error: true });
       res.status(200).send({ message: "success", error: false, data: agency });
    })
@@ -22,7 +22,7 @@ router.post('/get_register_agency_by_id',  verify.verifyAppToken, function (req,
       return res.status(200).send({ message: 'Register Agency Id is undefined', error: true });
    }
 
-   RegisterAgency.findOne({_id: req.body.registerAgencyId}, function (err, agency) {
+   RegisterAgency.findOne({_id: req.body.registerAgencyId}).exec(function (err, agency) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(agency == null) return res.status(200).send({ message: "Agency not exist", error: true });
       // if get register agency success
@@ -36,7 +36,7 @@ router.post('/register_agency_update',  verify.verifyAppToken, function (req, re
       return res.status(200).send({ message: 'Register Agency Id is undefined', error: true });
    }
 
-   RegisterAgency.findOneAndUpdate({_id: req.body._id}, { $set: { status: req.body.status, note: req.body.note } } ,function (err, agency) {
+   RegisterAgency.findOneAndUpdate({_id: req.body._id}, { status: req.body.status, note: req.body.note }).exec(function (err, agency) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(agency == null) return res.status(200).send({ message: "Agency not exist", error: true });
       // if get register agency success
@@ -69,7 +69,7 @@ router.post('/register_agency_search', verify.verifyAppToken, function(req, res)
 
    console.log(searchQuery);
 
-   RegisterAgency.find(searchQuery, function (err, radio) {
+   RegisterAgency.find(searchQuery).exec(function (err, radio) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
 
       // if find radio success
@@ -79,7 +79,7 @@ router.post('/register_agency_search', verify.verifyAppToken, function(req, res)
 
 // **************************OFFER PRICE**********************************
 router.post('/list_offer_price',  verify.verifyAppToken, function (req, res) {
-   OfferPrice.find({}, function( err, offerPrice) {
+   OfferPrice.find().exec(function( err, offerPrice) {
       if(err) return res.status(500).send({ message: 'Can not connect to server', error: true });
       res.status(200).send({ message: "success", error: false, data: offerPrice });
    })
@@ -90,7 +90,7 @@ router.post('/get_offer_price_by_id',  verify.verifyAppToken, function (req, res
       return res.status(200).send({ message: 'Offer Price Id is undefined', error: true });
    }
 
-   OfferPrice.findOne({_id: req.body.offerPriceId}, function (err, offer) {
+   OfferPrice.findOne({_id: req.body.offerPriceId}).exec(function (err, offer) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(offer == null) return res.status(200).send({ message: "Radio not exist", error: true });
       // if get offer price success
@@ -104,7 +104,7 @@ router.post('/offer_price_update',  verify.verifyAppToken, function (req, res) {
       return res.status(200).send({ message: 'Offer Price Id is undefined', error: true });
    }
 
-   OfferPrice.findOneAndUpdate({_id: req.body._id}, { $set: { status: req.body.status, note: req.body.note } } ,function (err, offer) {
+   OfferPrice.findOneAndUpdate({_id: req.body._id}, { status: req.body.status, note: req.body.note }).exec(function (err, offer) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(offer == null) return res.status(200).send({ message: "Offer Price not exist", error: true });
       // if get offer price success
@@ -139,7 +139,7 @@ router.post('/offer_price_search', verify.verifyAppToken, function(req, res){
 
    console.log(searchQuery);
 
-   OfferPrice.find(searchQuery, function (err, offerPrice) {
+   OfferPrice.find(searchQuery).exec(function (err, offerPrice) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
 
       // if find offer price success
@@ -150,7 +150,7 @@ router.post('/offer_price_search', verify.verifyAppToken, function(req, res){
 // ************************** CONSULT SERVICE **********************************
 
 router.post('/list_consult_service',  verify.verifyAppToken, function (req, res) {
-   ConsultService.find({}, function( err, consultService) {
+   ConsultService.find().exec(function( err, consultService) {
       if(err) return res.status(500).send({ message: 'Can not connect to server', error: true });
       res.status(200).send({ message: "success", error: false, data: consultService });
    })
@@ -161,7 +161,7 @@ router.post('/get_consult_service_by_id',  verify.verifyAppToken, function (req,
       return res.status(200).send({ message: 'Consult Service Id is undefined', error: true });
    }
 
-   ConsultService.findOne({_id: req.body.consultServiceId}, function (err, consultService) {
+   ConsultService.findOne({_id: req.body.consultServiceId}).exec(function (err, consultService) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(consultService == null) return res.status(200).send({ message: "Consult service not exist", error: true });
       // if get consult service success
@@ -175,7 +175,7 @@ router.post('/consult_service_update',  verify.verifyAppToken, function (req, re
       return res.status(200).send({ message: 'Consult Service Id is undefined', error: true });
    }
 
-   ConsultService.findOneAndUpdate({_id: req.body._id}, { $set: { status: req.body.status, note: req.body.note } } ,function (err, consultService) {
+   ConsultService.findOneAndUpdate({_id: req.body._id}, { status: req.body.status, note: req.body.note }).exec(function (err, consultService) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(consultService == null) return res.status(200).send({ message: "Consult service not exist", error: true });
       // if get consult service success
@@ -183,24 +183,32 @@ router.post('/consult_service_update',  verify.verifyAppToken, function (req, re
    })
 });
 
-router.post('/search', verify.verifyAppToken, function(req, res){
-   var { title, status } = req.body;
+router.post('/consult_service_search', verify.verifyAppToken, function(req, res){
+   var { fullName, phone, title, status } = req.body;
    console.log(req.body);
    var searchQuery = {};
    if(status != undefined && status > 0){
       searchQuery.status = status;
    }
+   if(fullName != undefined && fullName.trim() != '') {
+      searchQuery.fullName = new RegExp(fullName.trim());
+   }
+
+   if(phone != undefined && phone.trim() != '') {
+      searchQuery.phone = new RegExp(phone.trim());
+   }
+
    if(title != undefined && title.trim() != '') {
       searchQuery.title = new RegExp(title.trim());
    }
 
    console.log(searchQuery);
 
-   Radio.find(searchQuery, function (err, radio) {
+   ConsultService.find(searchQuery).exec(function (err, consult) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
 
-      // if find radio success
-      res.status(200).send({ message: "success", error: false, data: radio });
+      // if find consult success
+      res.status(200).send({ message: "success", error: false, data: consult });
    })
 });
 

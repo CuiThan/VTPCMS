@@ -20,7 +20,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
    }
    console.log(searchQuery);
 
-   BannerItem.find(searchQuery, function (err, banners) {
+   BannerItem.find(searchQuery).exec(function (err, banners) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
       // if create banner success
       res.status(200).send({ message: "success", error: false, data: banners });
@@ -29,7 +29,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
 
 router.post('/list_all', verify.verifyAppToken, function(req, res){
    query = req.body.bannerItemId == undefined ? {} : { _id: req.body.bannerItemId };
-   BannerItem.find(query, function (err, items){
+   BannerItem.find(query).exec(function (err, items){
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       // if create banner item success
       res.status(200).send({ message: "success", error: false, data: items});
@@ -41,7 +41,7 @@ router.post('/get_by_id', verify.verifyAppToken, function( req, res) {
    if(bodyRequest.bannerItemId == undefined || bodyRequest.bannerId == undefined){
       return res.status(200).send({message: "BannerId and BannerItemId is undefined", error: true });
    }
-   BannerItem.findOne({ _id: bodyRequest.bannerItemId }, function( err, items) {
+   BannerItem.findOne({ _id: bodyRequest.bannerItemId }).exec(function( err, items) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       // if create banner item success
       Banner.findOne({ _id: bodyRequest.bannerId }, function( err, banner) {
@@ -58,7 +58,7 @@ router.post('/list_child', verify.verifyAppToken, function( req, res) {
    if(bodyRequest.bannerId == undefined){
       return res.status(200).send({message: "Banner id is undefined", error: true });
    }
-   BannerItem.find({ 'bannerId': bodyRequest.bannerId }, function( err, items) {
+   BannerItem.find({ 'bannerId': bodyRequest.bannerId }).exec(function( err, items) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       // if create banner item success
       res.status(200).send({ message: "success", error: false, data: items});
@@ -110,7 +110,7 @@ router.post('/update', verify.verifyAppToken, function(req, res) {
       endDate: bodyRequest.endDate == '' ? '' : new Date(bodyRequest.endDate),
       updatedDate : new Date(),
       updatedUserId : req.clientAppId
-   }, function( err, callback){
+   }).exec(function( err, callback){
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
       if(callback == null)
          res.status(200).send({ message: "Banner item not exist", error: true });
@@ -126,7 +126,7 @@ router.post('/delete', verify.verifyAppToken, function( req, res) {
       return res.status(200).send({message: "Banner item id undefined", error: true });
    }
 
-   BannerItem.findOneAndRemove({ _id: bodyRequest.bannerItemId }, function(err, callback) {
+   BannerItem.findOneAndRemove({ _id: bodyRequest.bannerItemId }).exec( function(err, callback) {
       if(err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(callback == null)
          res.status(200).send({ message: "Banner item not exist", error: true });

@@ -33,7 +33,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
    }
    console.log(searchQuery);
 
-   Post.find(searchQuery, function (err, posts) {
+   Post.find(searchQuery).exec(function (err, posts) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
       // if create banner success
       res.status(200).send({ message: "success", error: false, data: posts });
@@ -43,7 +43,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
 router.post('/list_all', verify.verifyAppToken, function(req, res){
 
    let query = req.body.postId == undefined ? {} : {_id: req.body.postId};
-   Post.find(query, function (err, banners) {
+   Post.find(query).exec(function (err, banners) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
 
       // if create banner success
@@ -99,7 +99,7 @@ router.post('/update', verify.verifyAppToken, function (req, res) {
       publishDate : new Date(bodyRequest.publishDate),
       updatedDate : new Date(),
       updatedUserId : req.clientAppId
-   }, function( err, callback){
+   }).exec(function( err, callback){
       if (err) return res.status(500).json({ message: "Can not connect to server", error: true });
       if (callback == null){
          return res.status(200).json({ message: "Post not exist", error: true });
@@ -115,7 +115,7 @@ router.post('/delete', verify.verifyAppToken, function( req, res) {
       return res.status(200).send({message: "Post id is undefined", error: true });
    }
 
-   Post.findOneAndRemove({ _id: req.body.postId }, function (err, callback) {
+   Post.findOneAndRemove({ _id: req.body.postId }).exec(function (err, callback) {
       if(err) res.status(500).send({ message: "Can not connect to server", error: true });
       if(callback == null) {
          return res.status(200).send({ message: "Post not exist", error: true });

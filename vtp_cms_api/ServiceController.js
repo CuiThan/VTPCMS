@@ -10,8 +10,8 @@ router.post('/list_all', verify.verifyAppToken, function (req, res) {
    let obj = req.body.serviceId == undefined ? {} : {_id: req.body.serviceId};
    // console.log(req.body);
    // console.log(obj);
-   Service.find(obj, function (err, services) {
-      console.log('line 15', services.length);
+   Service.find(obj).exec( function (err, services) {
+      // console.log('line 15', services.length);
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       // if create banner success
 
@@ -61,7 +61,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
    }
    console.log(searchQuery);
 
-   Service.find(searchQuery, function (err, services) {
+   Service.find(searchQuery).exec(function (err, services) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
       // if create banner success
       res.status(200).send({ message: "success", error: false, data: services });
@@ -112,7 +112,7 @@ router.post('/update', verify.verifyAppToken, function(req, res) {
       isNews : bodyRequest.isNews,
       updatedDate : new Date(),
       updatedUserId : req.clientAppId
-   }, function( err, callback){
+   }).exec( function( err, callback){
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if (callback == null){
          res.status(200).send({ message: "Service not exist", error: true });
@@ -133,7 +133,7 @@ router.post('/delete', verify.verifyAppToken, function( req, res) {
       return res.status(200).json({ message: 'Service id is undefined', error: true});
    }
 
-   Service.findOneAndRemove({ _id: req.body.serviceId }, function (err, callback) {
+   Service.findOneAndRemove({ _id: req.body.serviceId }).exec(function (err, callback) {
       if(err) res.status(500).send({ message: "Can not connect to server", error: true });
       if(callback == null) {
          res.status(200).send({ message: "Service not exist", error: true });

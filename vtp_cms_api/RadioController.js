@@ -48,7 +48,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
 
    console.log(searchQuery);
 
-   Radio.find(searchQuery, function (err, radio) {
+   Radio.find(searchQuer).exec(function (err, radio) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
 
       // if find radio success
@@ -57,7 +57,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
 });
 
 router.post('/list_all_radio', verify.verifyAppToken, function (req, res) {
-   Radio.find({}, function (err, radios) {
+   Radio.find().exec(function (err, radios) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       // if list radios not null
       res.status(200).send({ message: "success", error: false, data: radios });
@@ -67,14 +67,14 @@ router.post('/list_all_radio', verify.verifyAppToken, function (req, res) {
 router.post('/get_radio_by_id', verify.verifyAppToken, function(req, res){
    if(req.body.radioId == undefined){
       return res.status(200).send({ message: 'Radio id is undefined', error: true });
-   }
+   };
 
-   Radio.findOne({_id: req.body.radioId}, function (err, radio) {
+   Radio.findOne({_id: req.body.radioId}).exec(function (err, radio) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(radio == null) return res.status(200).send({ message: "Radio not exist", error: true });
       // if get radio success
-      RadioSchedule.find({ radioId : req.body.radioId}, function (err, schedule) {
-         if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
+      RadioSchedule.find({ radioId : req.body.radioId}).exec(function (err, schedule) {
+         if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
          if(schedule == null) return res.status(200).send({ message: "Radio schedule not exist", error: true });
          // if get radio success
          res.status(200).send({ message: "success", error: false, radio: radio, schedule: schedule });
@@ -98,28 +98,6 @@ router.post('/create', verify.verifyAppToken, function(req, res){
    }, function(err, radio){
 
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
-      //
-      // //if create radio success
-      // RadioSchedule.create({
-      //    radioId: radio._id,
-      //    title: bodyRequest.title,
-      //    status: bodyRequest.status,
-      //    description: bodyRequest.description,
-      //    publicDate: new Date(bodyRequest.publicDate),
-      //    createdDate: new Date(),
-      //    updatedDate : new Date(),
-      //    createdUserId : req.clientAppId,
-      //    updatedUserId : req.clientAppId
-      // }, function(err, radioSchedule){
-      //    if (err) {
-      //       Radio.findOneAndRemove({ _id: req.body.radioId });
-      //       return res.status(500).send({ message: "Can not connect to server", error: true });
-      //    }
-      //
-      //    // if create radio schedule success
-      //    res.status(200).send({ message: "Create radio schedule success", error: false, radio: radio });
-      // })
-      // if create radio success
       res.status(200).send({ message: "Create radio success", error: false, radio: radio });
    })
 })
@@ -130,40 +108,34 @@ router.post('/update', verify.verifyAppToken, function(req, res) {
    if(bodyRequest._id == undefined){
       return res.status(200).send({ message: 'Radio id is undefined', error: true });
    }
-   Radio.findOneAndUpdate({ _id:  bodyRequest._id },
-   {  $set: {
+   Radio.findOneAndUpdate({ _id:  bodyRequest._id },{
+      title: bodyRequest.title,
+      status : bodyRequest.status,
+      mediaUrl: bodyRequest.mediaUrl,
+      description: bodyRequest.description,
+      updatedDate : new Date(),
+      updatedUserId : req.clientAppId
+   }).exec(function(err, callback){
+      if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
+      if (callback == null) return res.status(200).send({ message: "Radio not exist", error: true });
+
+      RadioSchedule.update({ radioId:  bodyRequest._id }, {
          title: bodyRequest.title,
          status : bodyRequest.status,
-         mediaUrl: bodyRequest.mediaUrl,
          description: bodyRequest.description,
-         updatedDate : new Date(),
+         // updatedDate : new Date(),
          updatedUserId : req.clientAppId
-      }
-   }, function( err, callback){
-      if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
-      if (callback == null)
-         return res.status(200).send({ message: "Radio not exist", error: true });
-      else {
-         RadioSchedule.update({ radioId:  bodyRequest._id },
-         { $set : {
-               title: bodyRequest.title,
-               status : bodyRequest.status,
-               description: bodyRequest.description,
-               // updatedDate : new Date(),
-               updatedUserId : req.clientAppId
-            }
-         }, {multi: true}, function( err, callback){
-            if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
-            if (callback == null)
-               return res.status(200).send({ message: "Radio schedule not exist", error: true });
-            else
-               // if update radio success
-               res.status(200).send({ message: "Update radio and schedule success", error: false });
-         })
-      }
+      }, {multi: true}, function( err, callback){
+         if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
+         if (callback == null)
+            return res.status(200).send({ message: "Radio schedule not exist", error: true });
+         else
+            // if update radio success
+            res.status(200).send({ message: "Update radio and schedule success", error: false });
+      })
+   })
          // if update radio success
          // res.status(200).send({ message: "Update radio success", error: false });
-   })
 })
 
 router.post('/delete', verify.verifyAppToken, function( req, res) {
@@ -172,7 +144,7 @@ router.post('/delete', verify.verifyAppToken, function( req, res) {
       return res.status(200).send({ message: 'Radio id is undefined', error: true });
    }
 
-   Radio.findOneAndRemove({ _id: req.body.radioId }, function (err, callback) {
+   Radio.findOneAndRemove({ _id: req.body.radioId }).exec(function (err, callback) {
       if(err) res.status(500).send({ message: "Can not connect to server", error: true });
       if(callback == null)
          return res.status(200).send({ message: "Radio not exist", error: true });
@@ -215,7 +187,7 @@ router.post('/schedule_search', verify.verifyAppToken, function(req, res){
 });
 
 router.post('/list_all_schedule_radio', verify.verifyAppToken, function (req, res) {
-   RadioSchedule.find({}, function (err, radios) {
+   RadioSchedule.find().exec(function (err, radios) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       // if list radios not null
       res.status(200).send({ message: "success", error: false, data: radios });
@@ -227,7 +199,7 @@ router.post('/get_schedule_radio_by_parent', verify.verifyAppToken, function(req
       return res.status(200).send({ message: 'Radio schedule id is undefined', error: true });
    }
 
-   RadioSchedule.find({ radioId: req.body.radioId}, function (err, schedule) {
+   RadioSchedule.find({ radioId: req.body.radioId}).exec(function (err, schedule) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(schedule == null) return res.status(200).send({ message: "Radio schedule not exist", error: true });
       // if get radio success
@@ -240,7 +212,7 @@ router.post('/get_schedule_radio_by_id', verify.verifyAppToken, function(req, re
       return res.status(200).send({ message: 'Radio schedule id is undefined', error: true });
    }
 
-   RadioSchedule.findOne({_id: req.body.radioScheduleId}, function (err, schedule) {
+   RadioSchedule.findOne({_id: req.body.radioScheduleId}).exec(function (err, schedule) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(schedule == null) return res.status(200).send({ message: "Radio schedule not exist", error: true });
       // if get radio success
@@ -283,7 +255,7 @@ router.post('/schedule_update', verify.verifyAppToken, function(req, res) {
       publicDate: new Date(bodyRequest.publicDate),
       updatedDate : new Date(),
       updatedUserId : req.clientAppId
-   }, function( err, callback){
+   }).exec(function( err, callback){
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
       if (callback == null)
          return res.status(200).send({ message: "Radio schedule not exist", error: true });
@@ -297,7 +269,7 @@ router.post('/schedule_delete', verify.verifyAppToken, function( req, res) {
    if(req.body.radioScheduleId == undefined){
       return res.status(200).send({ message: 'Radio schedule id is undefined', error: true });
    }
-   RadioSchedule.findOneAndRemove({ _id: req.body.radioScheduleId }, function (err, callback) {
+   RadioSchedule.findOneAndRemove({ _id: req.body.radioScheduleId }).exec(function (err, callback) {
       if(err) res.status(500).send({ message: "Can not connect to server", error: true });
       if(callback == null)
          return res.status(200).send({ message: "Radio schedule not exist", error: true });

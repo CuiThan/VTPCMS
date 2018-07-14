@@ -9,7 +9,7 @@ router.use(bodyParser.json());
 router.post('/list_all', verify.verifyAppToken, function(req, res){
 
    // let obj = req.body.bannerId == undefined ? {} : { _id: req.body.bannerId};
-   Banner.find({}, function (err, banners) {
+   Banner.find({}).exec(function (err, banners) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
 
       // if create banner success
@@ -21,7 +21,7 @@ router.post('/get_by_id', verify.verifyAppToken, function(req, res){
    if(req.body.bannerId == undefined){
       return res.status(200).send({ message: 'Banner id is undefined', error: true });
    }
-   Banner.findOne({_id: req.body.bannerId}, function (err, banner) {
+   Banner.findOne({_id: req.body.bannerId}).exec(function (err, banner) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if (banner == null) return res.status(200).send({ message: "Banner not exist", error: true });
       // if create banner success
@@ -52,7 +52,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
 
    console.log(searchQuery);
 
-   Banner.find(searchQuery, function (err, banners) {
+   Banner.find(searchQuery).exec(function (err, banners) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
 
       // if create banner success
@@ -89,7 +89,7 @@ router.post('/update', verify.verifyAppToken, function(req, res) {
       backgroundRGB: bodyRequest.backgroundRGB,
       updatedDate : new Date(),
       updatedUserId : req.clientAppId
-   }, function( err, callback){
+   }).exec(function( err, callback){
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if (callback == null)
          return res.status(200).send({ message: "Banner not exist", error: true });
@@ -104,7 +104,7 @@ router.post('/delete', verify.verifyAppToken, function( req, res) {
       return res.status(200).send({ message: 'Banner id is undefined', error: true });
    }
 
-   Banner.findOneAndRemove({ _id: req.body.bannerId }, function (err, callback) {
+   Banner.findOneAndRemove({ _id: req.body.bannerId }).exec(function (err, callback) {
       if(err) res.status(500).send({ message: "Can not connect to server", error: true });
       if(callback == null)
          return res.status(200).send({ message: "Banner not exist", error: true });
