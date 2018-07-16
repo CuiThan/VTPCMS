@@ -48,7 +48,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
 
    console.log(searchQuery);
 
-   Radio.find(searchQuer).exec(function (err, radio) {
+   Radio.find(searchQuery).exec(function (err, radio) {
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
 
       // if find radio success

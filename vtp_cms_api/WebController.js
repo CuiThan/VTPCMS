@@ -21,16 +21,16 @@ var storage = multer.diskStorage({
 
 var mediaStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, '../VTPCMS/public/medias')
+    cb(null, '../VTPCMS/public/audios')
   },
   filename: function (req, file, cb) {
      console.log('file', file);
-    cb(null, Date.now() + '.' + file.originalname.split('.')[1])
+    cb(null, Date.now() + '.' + file.mimetype.split('/')[1])
   }
 });
 
-const upload = multer({ storage });
-const mediaUpoad = multer({ mediaStorage });
+const upload = multer({ storage: storage });
+const mediaUpoad = multer({ storage: mediaStorage });
 
 var Services = require('../dao/services');
 
@@ -99,11 +99,11 @@ router.post('/upload_image', VerifyToken.verifyAppToken, upload.single('file'), 
 
 })
 
-router.post('/upload_media_file', VerifyToken.verifyAppToken, mediaUpoad.single('media_file'), function (req, res) {
+router.post('/upload_media_file', VerifyToken.verifyAppToken, mediaUpoad.single('file'), function (req, res) {
    console.log(req.file);
    console.log('line 104');
    if(req.file){
-      return res.status(200).send({ "message": " Upload image success", error: false, filename: req.file.filename });
+      return res.status(200).send({ "message": " Upload audio success", error: false, filename: req.file.filename });
    }
    res.status(500).send({ "message": "Can not connect to server", error: true });
 

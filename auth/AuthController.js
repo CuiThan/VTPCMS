@@ -105,7 +105,7 @@ router.post('/login', function(req, res) {
 })
 
 router.post('/gettoken', function(req, res) {
-      console.log(req.body);
+      // console.log(req.body);
       if (req.body.appId == undefined) {
          return res.status(200).send({ auth: false, message: "AppId is required!!!" });
       }

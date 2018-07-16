@@ -8,13 +8,22 @@ router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
 
 router.post('/search', verify.verifyAppToken, function(req, res){
-   var { bannerItemName, status } = req.body;
-   // console.log(req.body);
+   var { bannerItemName, status, isDefault, priority } = req.body;
+   console.log(req.body);
    var searchQuery = {};
 
    if(status != undefined && status > 0){
       searchQuery.status = status;
    }
+
+   if(priority != undefined && priority > 0){
+      searchQuery.priority = priority;
+   }
+
+   if(isDefault != undefined && isDefault > 0){
+      searchQuery.isDefault = isDefault;
+   }
+
    if(bannerItemName != undefined && bannerItemName.trim() != '') {
       searchQuery.bannerItemName = new RegExp(bannerItemName.trim());
    }
