@@ -29,22 +29,22 @@ router.post('/list_all', verify.verifyAppToken, function (req, res) {
 
 router.post('/list_parent', verify.verifyAppToken, function (req, res) {
    Service.find({ parentId: 0 }).exec(function (err, services) {
-      if (err) return res.status(500).send('Error on the server.');
-      if (!services) return res.status(404).send('No user found.');
+      if (err) return res.status(500).send({ message: "Error on the server.", error: true });
+      if (!services) return res.status(404).send({ message: "No service found.", error: true });
 
-      res.status(200).send({ message: 'success', data: services });
+      res.status(200).send({ message: 'success', error: false, data: services });
    });
 });
 
 router.post('/list_child', verify.verifyAppToken, function (req, res) {
    if(req.body.parentServiceId == undefined){
-      return res.status(200).send('Child service not found');
+      return res.status(200).send({ message: "Child service not found", error: true });
    }
    Service.find({ parentId: req.body.parentServiceId }).exec(function (err, services) {
-      if (err) return res.status(500).send('Error on the server.');
-      if (!services) return res.status(404).send('No user found.');
+      if (err) return res.status(500).send({ message: "Error on the server.", error: true });
+      if (!services) return res.status(404).send({ message: "No service found.", error: true });
 
-      res.status(200).send({ message: 'success', data: services });
+      res.status(200).send({ message: 'success', error: false, data: services });
    });
 });
 

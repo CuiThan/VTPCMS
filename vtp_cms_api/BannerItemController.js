@@ -8,12 +8,26 @@ router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
 
 router.post('/search', verify.verifyAppToken, function(req, res){
-   var { bannerItemName, status, isDefault, priority } = req.body;
+   var { bannerItemName, status, isDefault, priority, fromStartDate, toStartDate, fromEndDate, toEndDate, bannerId } = req.body;
    console.log(req.body);
    var searchQuery = {};
+   searchQuery.bannerId = bannerId;
 
    if(status != undefined && status > 0){
       searchQuery.status = status;
+   }
+
+   //find start date between
+   if(verify.IsNotEmptyOrUndefined(fromStartDate) || verify.IsNotEmptyOrUndefined(toStartDate)){
+      searchQuery.startDate = {};
+      if(verify.IsNotEmptyOrUndefined(fromStartDate)) searchQuery.startDate['$gte']  = new Date(fromStartDate);
+      if(verify.IsNotEmptyOrUndefined(toStartDate)) searchQuery.startDate['$lt']  = new Date(toStartDate);
+   }
+   // find end date between
+   if( verify.IsNotEmptyOrUndefined(fromEndDate)  || verify.IsNotEmptyOrUndefined(fromEndDate)){
+      searchQuery.endDate = {};
+      if(verify.IsNotEmptyOrUndefined(fromEndDate)) searchQuery.endDate['$gte']  = new Date(fromEndDate);
+      if(verify.IsNotEmptyOrUndefined(fromEndDate)) searchQuery.endDate['$lt']  = new Date(toEndDate);
    }
 
    if(priority != undefined && priority > 0){
@@ -24,13 +38,13 @@ router.post('/search', verify.verifyAppToken, function(req, res){
       searchQuery.isDefault = isDefault;
    }
 
-   if(bannerItemName != undefined && bannerItemName.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(bannerItemName)) {
       searchQuery.bannerItemName = new RegExp(bannerItemName.trim());
    }
    console.log(searchQuery);
 
    BannerItem.find(searchQuery).exec(function (err, banners) {
-      if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
+      if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       // if create banner success
       res.status(200).send({ message: "success", error: false, data: banners });
    })
@@ -94,7 +108,7 @@ router.post('/create', verify.verifyAppToken, function(req, res){
       updatedUserId : req.clientAppId
    }, function(err, bannerItemObject){
 
-      if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
+      if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
 
       // if create banner item success
       res.status(200).send({ message: "Create banner item success", error: false, banner: bannerItemObject });
@@ -120,7 +134,7 @@ router.post('/update', verify.verifyAppToken, function(req, res) {
       updatedDate : new Date(),
       updatedUserId : req.clientAppId
    }).exec(function( err, callback){
-      if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
+      if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(callback == null)
          res.status(200).send({ message: "Banner item not exist", error: true });
       else

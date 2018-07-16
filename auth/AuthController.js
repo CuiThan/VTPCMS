@@ -106,16 +106,17 @@ router.post('/login', function(req, res) {
 
 router.post('/gettoken', function(req, res) {
       // console.log(req.body);
+      console.log('login');
       if (req.body.appId == undefined) {
-         return res.status(200).send({ auth: false, message: "AppId is required!!!" });
+         return res.status(200).send({ auth: false, message: "AppId is required !!!" });
       }
       if (req.body.secretKey == undefined) {
-         return res.status(200).send({ auth: false, message: "SecretKey is required!!!" });
+         return res.status(200).send({ auth: false, message: "SecretKey is required !!!" });
       }
 
       ClientApp.findOne({ appId: req.body.appId }, function (err, clientApp) {
-      if (err) return res.status(500).send('Error on the server.');
-      if (!clientApp) return res.status(404).send('No user found.');
+      if (err) return res.status(500).send({ auth: false, message: 'Error on the server.'});
+      if (!clientApp) return res.status(404).send({ auth: false, message: 'No user found.'});
 
       // check if the password is valid
       var passwordIsValid = bcrypt.compareSync(req.body.secretKey, clientApp.secretKey);

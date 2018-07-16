@@ -5,7 +5,7 @@ var RegisterAgencySchema = new mongoose.Schema({
     email : String,
     phone : String,
     address : String,
-    pesonalOrBusinessRegisterId : String,
+    personalOrBusinessRegisterId : String,
     issuedDate : Date,
     issuedPlace: String,
     createdUserId : String,

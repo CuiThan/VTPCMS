@@ -93,9 +93,9 @@ router.post('/get-services-by-id', VerifyToken.verifyAppToken, function(req, res
 router.post('/upload_image', VerifyToken.verifyAppToken, upload.single('file'), function (req, res) {
    console.log(req.file);
    if(req.file){
-      return res.status(200).send({ "message": " Upload image success", error: false, filename: req.file.filename });
+      return res.status(200).send({ message: " Upload image success", error: false, filename: req.file.filename });
    }
-   res.status(500).send({ "message": "Can not connect to server", error: true });
+   res.status(500).send({ message: "Can not connect to server", error: true });
 
 })
 
@@ -103,9 +103,9 @@ router.post('/upload_media_file', VerifyToken.verifyAppToken, mediaUpoad.single(
    console.log(req.file);
    console.log('line 104');
    if(req.file){
-      return res.status(200).send({ "message": " Upload audio success", error: false, filename: req.file.filename });
+      return res.status(200).send({ message: " Upload audio success", error: false, filename: req.file.filename });
    }
-   res.status(500).send({ "message": "Can not connect to server", error: true });
+   res.status(500).send({ message: "Can not connect to server", error: true });
 
 })
 

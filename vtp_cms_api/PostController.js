@@ -104,7 +104,7 @@ router.post('/update', verify.verifyAppToken, function (req, res) {
       if (callback == null){
          return res.status(200).json({ message: "Post not exist", error: true });
       }
-      res.status(200).json({ message: "Update Post success", error: false });
+      res.status(200).json({ message: "Update post success", error: false });
 
    })
 })

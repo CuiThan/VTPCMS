@@ -35,6 +35,11 @@ module.exports = {
          req.clientAppId = decoded.userId;
          next();
       });
+   },
+
+   IsNotEmptyOrUndefined: function(string) {
+      if( string != undefined && string.trim() != '') return true;
+      return false
    }
 
 

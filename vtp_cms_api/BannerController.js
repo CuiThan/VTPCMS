@@ -53,7 +53,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
    console.log(searchQuery);
 
    Banner.find(searchQuery).exec(function (err, banners) {
-      if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
+      if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
 
       // if create banner success
       res.status(200).send({ message: "success", error: false, data: banners });

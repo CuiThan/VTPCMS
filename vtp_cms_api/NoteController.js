@@ -45,9 +45,11 @@ router.post('/register_agency_update',  verify.verifyAppToken, function (req, re
 });
 
 router.post('/register_agency_search', verify.verifyAppToken, function(req, res){
-   var { fullName, address, job, registerAgencyAddress, status  } = req.body;
+   var { phone, fullName, address, job, registerAgencyAddress, personalOrBusinessRegisterId, status  } = req.body;
    console.log(req.body);
    var searchQuery = {};
+
+   // searchQuery.startDate = {"$lt": new Date(2018,7,16)};
    if(status != undefined && status > 0){
       searchQuery.status = status;
    }
@@ -63,6 +65,15 @@ router.post('/register_agency_search', verify.verifyAppToken, function(req, res)
       searchQuery.job = new RegExp(job.trim());
    }
 
+   if(phone != undefined && phone.trim() != '') {
+      phone = phone.replace(/\s+/g, '');
+      searchQuery.phone = new RegExp(phone.trim());
+   }
+
+   if(personalOrBusinessRegisterId != undefined && personalOrBusinessRegisterId.trim() != '') {
+      searchQuery.personalOrBusinessRegisterId = new RegExp(personalOrBusinessRegisterId.trim());
+   }
+
    if(registerAgencyAddress != undefined && registerAgencyAddress.trim() != '') {
       searchQuery.registerAgencyAddress = new RegExp(registerAgencyAddress.trim());
    }
@@ -70,7 +81,7 @@ router.post('/register_agency_search', verify.verifyAppToken, function(req, res)
    console.log(searchQuery);
 
    RegisterAgency.find(searchQuery).exec(function (err, radio) {
-      if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
+      if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
 
       // if find radio success
       res.status(200).send({ message: "success", error: false, data: radio });
@@ -114,7 +125,7 @@ router.post('/offer_price_update',  verify.verifyAppToken, function (req, res) {
 
 
 router.post('/offer_price_search', verify.verifyAppToken, function(req, res){
-   var { fullName, status, departurePlace, destinationPlace, service } = req.body;
+   var { fullName, phone, status, departurePlace, destinationPlace, service } = req.body;
    console.log(req.body);
    var searchQuery = {};
    if(status != undefined && status > 0){
@@ -122,6 +133,11 @@ router.post('/offer_price_search', verify.verifyAppToken, function(req, res){
    }
    if(fullName != undefined && fullName.trim() != '') {
       searchQuery.fullName = new RegExp(fullName.trim());
+   }
+
+   if(phone != undefined && phone.trim() != '') {
+      phone = phone.replace(/\s+/g, '');
+      searchQuery.phone = new RegExp(phone.trim());
    }
 
    if(departurePlace != undefined && departurePlace.trim() != '') {
@@ -140,7 +156,7 @@ router.post('/offer_price_search', verify.verifyAppToken, function(req, res){
    console.log(searchQuery);
 
    OfferPrice.find(searchQuery).exec(function (err, offerPrice) {
-      if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
+      if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
 
       // if find offer price success
       res.status(200).send({ message: "success", error: false, data: offerPrice });
@@ -184,7 +200,7 @@ router.post('/consult_service_update',  verify.verifyAppToken, function (req, re
 });
 
 router.post('/consult_service_search', verify.verifyAppToken, function(req, res){
-   var { fullName, phone, title, status } = req.body;
+   var { fullName, phone, address, title, status } = req.body;
    console.log(req.body);
    var searchQuery = {};
    if(status != undefined && status > 0){
@@ -195,7 +211,12 @@ router.post('/consult_service_search', verify.verifyAppToken, function(req, res)
    }
 
    if(phone != undefined && phone.trim() != '') {
+      phone = phone.replace(/\s+/g, '');
       searchQuery.phone = new RegExp(phone.trim());
+   }
+
+   if(address != undefined && address.trim() != '') {
+      searchQuery.address = new RegExp(address.trim());
    }
 
    if(title != undefined && title.trim() != '') {
@@ -205,7 +226,7 @@ router.post('/consult_service_search', verify.verifyAppToken, function(req, res)
    console.log(searchQuery);
 
    ConsultService.find(searchQuery).exec(function (err, consult) {
-      if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
+      if (err) return res.status(500).send({ message: "Can not connect to server", error: true });
 
       // if find consult success
       res.status(200).send({ message: "success", error: false, data: consult });
@@ -213,63 +234,63 @@ router.post('/consult_service_search', verify.verifyAppToken, function(req, res)
 });
 
 router.post('/generate',  verify.verifyAppToken, function (req, res) {
-   for (var i = 0; i < 20; i++) {
+   for (var i = 0; i < 50; i++) {
       RegisterAgency.create({
          fullName : 'Nguyen Van A' + i,
          email : i + '@gmail.com',
-         phone : '0123456789',
+         phone : '01234567' + i + (i + 1),
          address : i + 'Minh Khai, Hai Bà Trưng, Hà Nội',
-         pesonalOrBusinessRegisterId : "003004005",
+         personalOrBusinessRegisterId : "00300400" + i + '00' + (i + 1),
          issuedDate : new Date(),
          issuedPlace: "Hai Bà Trưng, Hà Nội",
          createdUserId : req.clientAppId,
-         job: "Saler",
-         registerAgencyAddress: "N2, Viettel Post",
+         job: "Saler" + i,
+         registerAgencyAddress: "N2, Viettel Post" + i,
          totalSquare: 300,
          length: 10,
          width: 30,
          height: 5,
          startDate: new Date(),
          note: '',
-         status: 0
+         status: 1
       }, function(err, register){
          console.log('add register agency');
       });
-      ConsultService.create({
-         fullName : 'Nguyen Van A' + i,
-         email : i + '@gmail.com',
-         phone : '0123456789',
-         address : i + 'Minh Khai, Hai Bà Trưng, Hà Nội',
-         title: 'title' + i,
-         content: 'content' + i,
-         note: '',
-         status: 0
-      }, function(err, register){
-         console.log('add consult service');
-      })
+      // ConsultService.create({
+      //    fullName : 'Nguyen Van A' + i,
+      //    email : i + '@gmail.com',
+      //    phone : '01234567' +  i + (i + 1),
+      //    address : i + 'Minh Khai, Hai Bà Trưng, Hà Nội',
+      //    title: 'title' + i,
+      //    content: 'content' + i,
+      //    note: '',
+      //    status: 1
+      // }, function(err, register){
+      //    console.log('add consult service');
+      // })
 
-      OfferPrice.create({
-         fullName : 'Nguyen Van A' + i,
-         email : i + '@gmail.com',
-         phone : '0123456789',
-         address : i + 'Minh Khai, Hai Bà Trưng, Hà Nội',
-         service: "Vận tải nội địa",
-         unit: "Kiện",
-         packageMaterial: "Thùng carton",
-         length: 10,
-         width: 30,
-         height: 5,
-         departurePlace: "Hà Nội",
-         destinationPlace: "TP HCM",
-         timeTarget: 30,
-         temperatureRequired: 25,
-         priceRequired: 5000000,
-         wareContent: "Đồ đông lạnh",
-         note: '',
-         status: 0
-      }, function(err, register){
-         console.log('add offer price');
-      });
+      // OfferPrice.create({
+      //    fullName : 'Nguyen Van A' + i,
+      //    email : i + '@gmail.com',
+      //    phone : '0123456789',
+      //    address : i + 'Minh Khai, Hai Bà Trưng, Hà Nội',
+      //    service: "Vận tải nội địa " + (i + 1),
+      //    unit: "Kiện",
+      //    packageMaterial: "Thùng carton",
+      //    length: 10 + i,
+      //    width: 30 + i,
+      //    height: 5 + i,
+      //    departurePlace: "Hà Nội " + i,
+      //    destinationPlace: "TP HCM " + i,
+      //    timeTarget: 30 + i,
+      //    temperatureRequired: 25 + i,
+      //    priceRequired: 5000000,
+      //    wareContent: "Đồ đông lạnh",
+      //    note: '',
+      //    status: 1
+      // }, function(err, register){
+      //    console.log('add offer price');
+      // });
    }
 });
 
