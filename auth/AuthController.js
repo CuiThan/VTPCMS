@@ -7,7 +7,7 @@ var VerifyToken = require('./VerifyToken');
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
 var ClientApp = require('../client_app/ClientApp');
-var User = require('../dao/User');
+var User = require('../dao/user');
 
 /**
  * Configure JWT
