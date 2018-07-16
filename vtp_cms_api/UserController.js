@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 var bodyParser = require('body-parser');
 var verify = require('../auth/VerifyToken');
-var User = require('../dao/User');
+var User = require('../dao/user');
 
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
