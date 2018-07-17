@@ -22,13 +22,20 @@ const upload = multer({ storage });
 
 router.post('/search', verify.verifyAppToken, function(req, res){
    console.log(req.body);
-   var { title, status } = req.body;
+   var { title, status, fromPublishDate, toPublishDate } = req.body;
    var searchQuery = {};
 
    if(status != undefined && status > 0){
       searchQuery.status = status;
    }
-   if(title != undefined && title.trim() != '') {
+
+   if( verify.IsNotEmptyOrUndefined(fromPublishDate)  || verify.IsNotEmptyOrUndefined(toPublishDate)){
+      searchQuery.publishDate = {};
+      if(verify.IsNotEmptyOrUndefined(fromPublishDate)) searchQuery.publishDate['$gte']  = new Date(fromPublishDate);
+      if(verify.IsNotEmptyOrUndefined(toPublishDate)) searchQuery.publishDate['$lt']  = new Date(toPublishDate);
+   }
+
+   if(verify.IsNotEmptyOrUndefined(title)) {
       searchQuery.title = new RegExp(title.trim());
    }
    console.log(searchQuery);

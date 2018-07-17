@@ -37,6 +37,10 @@ app.use('/api/user', UserController);
 var NoteController  = require(__root + 'vtp_cms_api/NoteController');
 app.use('/api/note', NoteController);
 
+
+var UploadExelController  = require(__root + 'vtp_cms_api/UploadExelController');
+app.use('/api/upload-exel', UploadExelController);
+
 var CMSAPI = require(__root + 'vtp_cms_api/WebController');
 app.use('/api/cms', CMSAPI);
 

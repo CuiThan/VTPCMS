@@ -24,10 +24,10 @@ router.post('/search', verify.verifyAppToken, function(req, res){
       if(verify.IsNotEmptyOrUndefined(toStartDate)) searchQuery.startDate['$lt']  = new Date(toStartDate);
    }
    // find end date between
-   if( verify.IsNotEmptyOrUndefined(fromEndDate)  || verify.IsNotEmptyOrUndefined(fromEndDate)){
+   if( verify.IsNotEmptyOrUndefined(fromEndDate)  || verify.IsNotEmptyOrUndefined(toEndDate)){
       searchQuery.endDate = {};
       if(verify.IsNotEmptyOrUndefined(fromEndDate)) searchQuery.endDate['$gte']  = new Date(fromEndDate);
-      if(verify.IsNotEmptyOrUndefined(fromEndDate)) searchQuery.endDate['$lt']  = new Date(toEndDate);
+      if(verify.IsNotEmptyOrUndefined(toEndDate)) searchQuery.endDate['$lt']  = new Date(toEndDate);
    }
 
    if(priority != undefined && priority > 0){

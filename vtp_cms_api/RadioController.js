@@ -154,14 +154,18 @@ router.post('/delete', verify.verifyAppToken, function( req, res) {
 //************************************************ RADIO SCHEDULE ************************************************
 
 router.post('/schedule_search', verify.verifyAppToken, function(req, res){
-   var { title, status } = req.body;
+   var { fromPublishDate, toPublishDate, status } = req.body;
    console.log(req.body);
    var searchQuery = {};
+
    if(status != undefined && status > 0){
       searchQuery.status = status;
    }
-   if(title != undefined && title.trim() != '') {
-      searchQuery.title = new RegExp(title.trim());
+
+   if( verify.IsNotEmptyOrUndefined(fromPublishDate)  || verify.IsNotEmptyOrUndefined(toPublishDate)){
+      searchQuery.publicDate = {};
+      if(verify.IsNotEmptyOrUndefined(fromPublishDate)) searchQuery.publicDate['$gte']  = new Date(fromPublishDate);
+      if(verify.IsNotEmptyOrUndefined(toPublishDate)) searchQuery.publicDate['$lt']  = new Date(toPublishDate);
    }
 
    console.log(searchQuery);
@@ -230,18 +234,20 @@ router.post('/schedule_create', verify.verifyAppToken, function(req, res){
 
 router.post('/schedule_update', verify.verifyAppToken, function(req, res) {
    var bodyRequest = req.body;
+   console.log(req.body);
    if(bodyRequest._id == undefined){
       return res.status(200).send({ message: 'Radio schedule id is undefined', error: true });
    }
    RadioSchedule.findOneAndUpdate({ _id:  bodyRequest._id }, {
-      radioId: bodyRequest.radioId,
-      title: bodyRequest.title,
       status : bodyRequest.status,
-      mediaUrl: bodyRequest.mediaUrl,
-      description: bodyRequest.description,
       publicDate: new Date(bodyRequest.publicDate),
       updatedDate : new Date(),
-      updatedUserId : req.clientAppId
+      updatedUserId : req.clientAppId,
+      // radioId: bodyRequest.radioId,
+      // title: bodyRequest.title,
+      // mediaUrl: bodyRequest.mediaUrl,
+      // description: bodyRequest.description,
+
    }).exec(function( err, callback){
       if (err) return res.status(500).send({ message: "Can not connect to server", error: true, log: err });
       if (callback == null)
