@@ -27,6 +27,23 @@ router.post('/list_all', verify.verifyAppToken, function (req, res) {
    })
 })
 
+router.post('/list_sibling', verify.verifyAppToken, function(req, res) {
+   console.log(req.body);
+   if (req.body.serviceId == undefined) {
+      return res.status(400).send({ error: true, message: 'ServiceId is undefined' });
+   }
+   Service.findById(req.body.serviceId).exec()
+   .then( service => {
+      if(!service) return res.status(200).send({ error: true, message: 'Service not found' });
+      return Service.find({'parentId': service.parentId}).exec();
+   }).then( sibling => {
+      if(!sibling) return res.status(200).send({ error: true, message: 'Sibling not found' });
+      res.status(200).send({ message: "success", error: false, data: sibling });
+   }).catch( err => {
+      return res.status(500).send({ message: "Can not connect to server", error: true });
+   });
+});
+
 router.post('/list_parent', verify.verifyAppToken, function (req, res) {
    Service.find({ parentId: 0 }).exec(function (err, services) {
       if (err) return res.status(500).send({ message: "Error on the server.", error: true });
