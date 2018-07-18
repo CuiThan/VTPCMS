@@ -9,7 +9,7 @@ router.use(bodyParser.json());
 router.post('/create', verify.verifyAppToken, function (req, res) {
    console.log(req.body);
    UploadExel.create(req.body , function (err, cb) {
-      if(err) return res.status(500).send({ error: true, log: err });
+      if(err) return res.status(500).send({ error: true, message: "Can not connect to server or query error" });
       res.status(200).send({error: false, message: "success", data: cb});
    })
 })
@@ -17,7 +17,7 @@ router.post('/create', verify.verifyAppToken, function (req, res) {
 router.post('/get_all', verify.verifyAppToken, function (req, res) {
    // req.body = { cus_id: '111111111111111111' }
    UploadExel.find().exec(function (err, cb) {
-      if(err) return res.status(500).send({ error: true, log: err });
+      if(err) return res.status(500).send({ error: true, message: "Can not connect to server or query error" });
       res.status(200).send({error: false, message: "success", data: cb});
    })
 })
@@ -25,10 +25,10 @@ router.post('/get_all', verify.verifyAppToken, function (req, res) {
 router.post('/get_by_cus_id', verify.verifyAppToken, function (req, res) {
    // req.body = { cus_id: '111111111111111111' }
    if(req.body.cus_id == undefined) {
-      return res.status(200).send({ error: true, message: "CusId is undefined" });
+      return res.status(400).send({ error: true, message: "CusId is undefined" });
    }
    UploadExel.find({ cusId: req.body.cus_id }).exec(function (err, cb) {
-      if(err) return res.status(500).send({ error: true, log: err });
+      if(err) return res.status(500).send({ error: true, message: "Can not connect to server or query error" });
       res.status(200).send({error: false, message: "success", data: cb});
    })
 })
@@ -36,10 +36,10 @@ router.post('/get_by_cus_id', verify.verifyAppToken, function (req, res) {
 router.post('/get_by_id', verify.verifyAppToken, function (req, res) {
    // req.body = { id: '111111111111111111' }
    if(req.body.id == undefined) {
-      return res.status(200).send({ error: true, message: "Id is undefined" });
+      return res.status(400).send({ error: true, message: "Id is undefined" });
    }
    UploadExel.find({ _id: req.body.id }).exec(function (err, cb) {
-      if(err) return res.status(500).send({ error: true, log: err });
+      if(err) return res.status(500).send({ error: true, message: "Can not connect to server or query error" });
       res.status(200).send({error: false, message: "success", data: cb});
    })
 })

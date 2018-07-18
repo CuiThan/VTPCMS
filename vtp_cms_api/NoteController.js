@@ -53,19 +53,19 @@ router.post('/register_agency_search', verify.verifyAppToken, function(req, res)
    if(status != undefined && status > 0){
       searchQuery.status = status;
    }
-   if(address != undefined && address.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(address)) {
       searchQuery.address = new RegExp(address.trim());
    }
 
-   if(fullName != undefined && fullName.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(fullName)) {
       searchQuery.fullName = new RegExp(fullName.trim());
    }
 
-   if(job != undefined && job.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(job)) {
       searchQuery.job = new RegExp(job.trim());
    }
 
-   if(phone != undefined && phone.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(phone)) {
       phone = phone.replace(/\s+/g, '');
       searchQuery.phone = new RegExp(phone.trim());
    }

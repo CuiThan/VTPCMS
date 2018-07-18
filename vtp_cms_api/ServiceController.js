@@ -56,7 +56,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
    if(status != undefined && status > 0){
       searchQuery.status = status;
    }
-   if(name != undefined && name.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(name)) {
       searchQuery.name = new RegExp(name.trim());
    }
    console.log(searchQuery);

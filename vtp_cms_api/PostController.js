@@ -31,8 +31,8 @@ router.post('/search', verify.verifyAppToken, function(req, res){
 
    if( verify.IsNotEmptyOrUndefined(fromPublishDate)  || verify.IsNotEmptyOrUndefined(toPublishDate)){
       searchQuery.publishDate = {};
-      if(verify.IsNotEmptyOrUndefined(fromPublishDate)) searchQuery.publishDate['$gte']  = new Date(fromPublishDate);
-      if(verify.IsNotEmptyOrUndefined(toPublishDate)) searchQuery.publishDate['$lt']  = new Date(toPublishDate);
+      if(verify.IsNotEmptyOrUndefined(fromPublishDate)) searchQuery.publishDate['$gte']  = fromPublishDate;
+      if(verify.IsNotEmptyOrUndefined(toPublishDate)) searchQuery.publishDate['$lt']  = toPublishDate;
    }
 
    if(verify.IsNotEmptyOrUndefined(title)) {

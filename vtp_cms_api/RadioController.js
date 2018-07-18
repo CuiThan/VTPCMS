@@ -146,7 +146,11 @@ router.post('/delete', verify.verifyAppToken, function( req, res) {
    Radio.findOneAndRemove({ _id: req.body.radioId }).exec(function (err, callback) {
       if(err) return res.status(500).send({ message: "Can not connect to server", error: true });
       if(callback == null) return res.status(200).send({ message: "Radio not exist", error: true });
-      res.status(200).send({ message: "Delete radio success", error: false });
+
+      RadioSchedule.deleteMany({ radioId: req.body.radioId }, function (err, cb) {
+         if(err) return res.status(500).send({ error: true, message: 'Remove radio success but not remove radio schedule fail' });
+      })
+      res.status(200).send({ message: "Remove radio success", error: false });
    })
 })
 

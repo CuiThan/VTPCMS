@@ -34,8 +34,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
    console.log(req.body);
    var searchQuery = {};
 
-   if(id!== undefined && id.trim() != ''){
-      // console.log(ObjectId.isValid(id));
+   if(verify.IsNotEmptyOrUndefined(id)){
       if (id.match(/^[0-9a-fA-F]{24}$/)) {
          searchQuery._id = id;
       }
@@ -46,7 +45,7 @@ router.post('/search', verify.verifyAppToken, function(req, res){
    if(status != undefined && status > 0){
       searchQuery.status = status;
    }
-   if(bannerName != undefined && bannerName.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(bannerName)) {
       searchQuery.bannerName = new RegExp(bannerName.trim());
    }
 

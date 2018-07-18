@@ -8,6 +8,7 @@ var mongoose = require('mongoose');
 var UploadExelSchema = new mongoose.Schema({
    header: [],
    content: [
+      // { index: Number, data: {} }
    ],
    cusId : String,
    rowCount: Number,
