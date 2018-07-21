@@ -10,8 +10,13 @@ app.get('/api', function (req, res) {
 });
 
 app.use(express.static(path.join(__root, 'public')));
-
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'pug');
 app.use(cors());
+
+app.get('/', function( req, res){
+   res.render('index', { title: 'Hey', message: 'Hello there!' })
+})
 
 var AuthController = require(__root + 'auth/AuthController');
 app.use('/api/auth', AuthController);

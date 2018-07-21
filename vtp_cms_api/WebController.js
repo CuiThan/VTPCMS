@@ -29,8 +29,18 @@ var mediaStorage = multer.diskStorage({
   }
 });
 
+var exelStorage = multer.diskStorage({
+   destination: function (req, file, cb) {
+      cb(null, '../VTPCMS/public/xlsx')
+   },
+   filename: function (req, file, cb) {
+      cb(null, Date.now() + '.' + file.originalname.split('.').slice(-1)[0])
+   }
+});
+
 const upload = multer({ storage: storage });
 const mediaUpoad = multer({ storage: mediaStorage });
+const exelUpoad = multer({ storage: exelStorage });
 
 var Services = require('../dao/services');
 
@@ -91,22 +101,27 @@ router.post('/get-services-by-id', VerifyToken.verifyAppToken, function(req, res
 //Upload image
 
 router.post('/upload_image', VerifyToken.verifyAppToken, upload.single('file'), function (req, res) {
-   console.log(req.file);
    if(req.file){
       return res.status(200).send({ message: " Upload image success", error: false, filename: req.file.filename });
    }
    res.status(500).send({ message: "Can not connect to server", error: true });
 
-})
+});
 
 router.post('/upload_media_file', VerifyToken.verifyAppToken, mediaUpoad.single('file'), function (req, res) {
-   console.log(req.file);
-   console.log('line 104');
    if(req.file){
       return res.status(200).send({ message: " Upload audio success", error: false, filename: req.file.filename });
    }
    res.status(500).send({ message: "Can not connect to server", error: true });
 
-})
+});
+
+router.post('/upload_exel_file', VerifyToken.verifyAppToken, exelUpoad.single('file'), function (req, res) {
+   if(req.file){
+      return res.status(200).send({ message: " Upload audio success", error: false, filename: req.file.filename });
+   }
+   res.status(500).send({ message: "Can not connect to server", error: true });
+
+});
 
 module.exports = router;

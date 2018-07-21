@@ -36,14 +36,19 @@ router.get('/active-radio', verify.verifyAppToken, function(req, resp) {
 });
 
 router.post('/search', verify.verifyAppToken, function(req, res){
-   var { title, status } = req.body;
+   var { title, description, status } = req.body;
    console.log(req.body);
    var searchQuery = {};
    if(status != undefined && status > 0){
       searchQuery.status = status;
    }
-   if(title != undefined && title.trim() != '') {
+
+   if(verify.IsNotEmptyOrUndefined(title)) {
       searchQuery.title = new RegExp(title.trim());
+   }
+
+   if(verify.IsNotEmptyOrUndefined(description)) {
+      searchQuery.description = new RegExp(description.trim());
    }
 
    console.log(searchQuery);

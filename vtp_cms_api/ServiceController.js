@@ -67,7 +67,7 @@ router.post('/list_child', verify.verifyAppToken, function (req, res) {
 
 router.post('/search', verify.verifyAppToken, function(req, res){
    // console.log(req.body);
-   var { name, status } = req.body;
+   var { name, description, status } = req.body;
    var searchQuery = {};
 
    if(status != undefined && status > 0){
@@ -75,6 +75,10 @@ router.post('/search', verify.verifyAppToken, function(req, res){
    }
    if(verify.IsNotEmptyOrUndefined(name)) {
       searchQuery.name = new RegExp(name.trim());
+   }
+
+   if(verify.IsNotEmptyOrUndefined(description)) {
+      searchQuery.description = new RegExp(description.trim());
    }
    console.log(searchQuery);
 

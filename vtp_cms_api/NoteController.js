@@ -45,7 +45,7 @@ router.post('/register_agency_update',  verify.verifyAppToken, function (req, re
 });
 
 router.post('/register_agency_search', verify.verifyAppToken, function(req, res){
-   var { phone, fullName, address, job, registerAgencyAddress, personalOrBusinessRegisterId, status  } = req.body;
+   var { phone, fullName, address, job, registerAgencyAddress, personalOrBusinessRegisterId, fromStartDate, toStartDate, status  } = req.body;
    console.log(req.body);
    var searchQuery = {};
 
@@ -76,6 +76,13 @@ router.post('/register_agency_search', verify.verifyAppToken, function(req, res)
 
    if(registerAgencyAddress != undefined && registerAgencyAddress.trim() != '') {
       searchQuery.registerAgencyAddress = new RegExp(registerAgencyAddress.trim());
+   }
+
+   //find start date between
+   if(verify.IsNotEmptyOrUndefined(fromStartDate) || verify.IsNotEmptyOrUndefined(toStartDate)){
+      searchQuery.startDate = {};
+      if(verify.IsNotEmptyOrUndefined(fromStartDate)) searchQuery.startDate['$gte']  = new Date(fromStartDate);
+      if(verify.IsNotEmptyOrUndefined(toStartDate)) searchQuery.startDate['$lt']  = new Date(toStartDate);
    }
 
    console.log(searchQuery);

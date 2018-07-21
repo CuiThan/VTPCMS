@@ -66,6 +66,7 @@ router.post('/list_all', verify.verifyAppToken, function(req, res){
 
 router.post('/create', verify.verifyAppToken, function (req, res) {
    var bodyRequest = req.body;
+   console.log(bodyRequest);
    Post.create({
       title : bodyRequest.title,
       content : bodyRequest.content,
@@ -74,7 +75,8 @@ router.post('/create', verify.verifyAppToken, function (req, res) {
       shortDescription : bodyRequest.shortDescription,
       description : bodyRequest.description,
       servicesId : bodyRequest.servicesId,
-      publishDate : bodyRequest.publishDate,
+      publishDate : new Date(bodyRequest.publishDate),
+      // publishDate : bodyRequest.publishDate,
       createdDate : new Date(),
       updatedDate : new Date(),
       createdUserId : req.clientAppId,
@@ -104,6 +106,7 @@ router.post('/update', verify.verifyAppToken, function (req, res) {
       description : bodyRequest.description,
       servicesId : bodyRequest.servicesId,
       publishDate : new Date(bodyRequest.publishDate),
+      // publishDate : bodyRequest.publishDate,
       updatedDate : new Date(),
       updatedUserId : req.clientAppId
    }).exec(function( err, callback){
