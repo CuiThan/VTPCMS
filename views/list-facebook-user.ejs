@@ -8,27 +8,32 @@
   <body>
     <h1 class="text-center mb-5"><%= title %></h1>
 
-    <table class="table">
+    <table class="table table-bordered">
         <thead>
             <tr>
-                <th scope="col">STT</th>
-                <th scope="col">UID</th>
-                <th scope="col">Name</th>
-                <th scope="col">Phone</th>
-                <th scope="col">Email</th>
-                <th scope="col">Facebook URL</th>
+                <th scope="col" class="text-center">STT</th>
+                <th scope="col" class="text-center">UID</th>
+                <th scope="col" class="text-center">Phone</th>
+                <th scope="col" class="text-center">Detail</th>
             </tr>
         </thead>
         <tbody>
             <% for(var i = 0; i < employeeList.length; i++ ){ %>
                 <tr>
-                    <th scope="row"><%= index  + i + 1 %></th>
-                    <td><%= employeeList[i].user_id %></td>
-                    <td><%= employeeList[i].name %></td>
-                    <td><%= employeeList[i].phone %></td>
-                    <td><%= employeeList[i].email %></td>
+                    <th scope="row" class="text-center"><%= index  + i + 1 %></th>
+                    <td class="text-center">
+                       <a href="<%= 'https://facebook.com/profile.php?id=' + employeeList[i].user_id %>" target="_blank">
+                          <%= employeeList[i].user_id %>
+                       </a>
+                    </td class="text-center">
+                    <td class="text-center"><%= employeeList[i].phone %></td>
                     <td>
-                       <a href="<%= 'https://facebook.com/profile.php?id=' + employeeList[i].user_id %>" target="_blank">View profile</a>
+                       <ul class="list-group">
+                          <li class="list-group-item">Name: <%= employeeList[i].name %></li>
+                          <li class="list-group-item">FirstName: <%= employeeList[i].first_name %></li>
+                          <li class="list-group-item">LastName: <%= employeeList[i].last_name %></li>
+                          <li class="list-group-item">Email: <%= employeeList[i].email %></li>
+                       </ul>
                     </td>
                 </tr>
             <% } %>
