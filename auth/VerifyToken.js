@@ -40,6 +40,11 @@ module.exports = {
    IsNotEmptyOrUndefined: function(string) {
       if( string != undefined && string.trim() != '') return true;
       return false
+   },
+
+   checkUndefined: function(string) {
+      if( string != undefined ) return string;
+      return '';
    }
 
 

@@ -163,12 +163,21 @@ router.post('/delete', verify.verifyAppToken, function( req, res) {
 //************************************************ RADIO SCHEDULE ************************************************
 
 router.post('/schedule_search', verify.verifyAppToken, function(req, res){
-   var { fromPublishDate, toPublishDate, status } = req.body;
-   console.log(req.body);
+   var { fromPublishDate, toPublishDate, status, radioId } = req.body;
+   console.log('schedule_search',req.body);
    var searchQuery = {};
 
    if(status != undefined && status > 0){
       searchQuery.status = status;
+   }
+
+   if(verify.IsNotEmptyOrUndefined(radioId)){
+      if (radioId.match(/^[0-9a-fA-F]{24}$/)) {
+         searchQuery.radioId = radioId;
+      }
+      else {
+         return res.status(200).send({message: "Radio Id is not valid", error: true});
+      }
    }
 
    if( verify.IsNotEmptyOrUndefined(fromPublishDate)  || verify.IsNotEmptyOrUndefined(toPublishDate)){

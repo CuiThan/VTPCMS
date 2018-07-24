@@ -20,7 +20,8 @@ var exelStorage = multer.diskStorage({
    }
 });
 
-var domain = "http://localhost:3344";
+// var domain = "http://localhost:3344";
+var domain = "http://125.212.238.119:3344";
 
 const exelUpoad = multer({ storage: exelStorage });
 //EXPORT EXEL FILE

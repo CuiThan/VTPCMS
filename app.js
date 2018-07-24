@@ -11,7 +11,7 @@ app.get('/api', function (req, res) {
 
 app.use(express.static(path.join(__root, 'public')));
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
+app.set('view engine', 'ejs');
 app.use(cors());
 
 app.get('/', function( req, res){

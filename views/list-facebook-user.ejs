@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link rel="stylesheet" href="/stylesheets/bootstrap.min.css" >
+  </head>
+  <body>
+    <h1 class="text-center mb-5"><%= title %></h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">STT</th>
+                <th scope="col">UID</th>
+                <th scope="col">Name</th>
+                <th scope="col">Phone</th>
+                <th scope="col">Email</th>
+                <th scope="col">Facebook URL</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% for(var i = 0; i < employeeList.length; i++ ){ %>
+                <tr>
+                    <th scope="row"><%= index  + i + 1 %></th>
+                    <td><%= employeeList[i].user_id %></td>
+                    <td><%= employeeList[i].name %></td>
+                    <td><%= employeeList[i].phone %></td>
+                    <td><%= employeeList[i].email %></td>
+                    <td>
+                       <a href="<%= 'https://facebook.com/profile.php?id=' + employeeList[i].user_id %>" target="_blank">View profile</a>
+                    </td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+    <div class="paginate-list containter text-center">
+        <% if (pages > 0) { %>
+            <ul class="pagination">
+                <% if (current == 1) { %>
+                    <li class="disabled "><a class="page-link">Đầu</a></li>
+                <% } else { %>
+                    <li class="page-item"><a class="page-link" href="/api/user/list-facebook-user/1">Đầu</a></li>
+                <% } %>
+                <% var i = (Number(current) > Number(maxPage) ? Number(current) - Number(maxPage) + 1 : 1) %>
+                <% if (i !== 1) { %>
+                    <li class="disabled page-item"><a class="page-link">...</a></li>
+                <% } %>
+                <% for (; i <= (Number(current) + Number(maxPage) - 1) && i <= pages; i++) { %>
+                    <% if (i == current) { %>
+                        <li class="active page-item"><a class="page-link"><%= i %></a></li>
+                    <% } else { %>
+                        <li class="page-item"><a class="page-link" href="/api/user/list-facebook-user/<%= i %>"><%= i %></a></li>
+                    <% } %>
+                    <% if (i == Number(current) + 14 && i < pages) { %>
+                        <li class="disabled page-item"><a class="page-link">...</a></li>
+                    <% } %>
+                <% } %>
+                <% if (current == pages) { %>
+                    <li class="disabled page-item"><a class="page-link">Cuối</a></li>
+                <% } else { %>
+                    <li class="page-item"><a class="page-link" href="/api/user/list-facebook-user/<%= pages %>">Cuối</a></li>
+                <% } %>
+            </ul>
+        <% } %>
+    <div>
+  </body>
+  <script src="/javascripts/jquery-3.2.1.slim.min.js"></script>
+  <script src="/javascripts/popper.min.js"></script>
+  <script src="/javascripts/bootstrap.min.js"></script>
+</html>
