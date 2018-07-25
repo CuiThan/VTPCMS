@@ -18,22 +18,23 @@
             </tr>
         </thead>
         <tbody>
-            <% for(var i = 0; i < employeeList.length; i++ ){ %>
+            <% for(var i = 0; i < userList.length; i++ ){ %>
                 <tr>
                     <th scope="row" class="text-center"><%= index  + i + 1 %></th>
                     <td class="text-center">
-                       <a href="<%= 'https://facebook.com/profile.php?id=' + employeeList[i].user_id %>" target="_blank">
-                          <%= employeeList[i].user_id %>
+                       <a href="<%= 'https://facebook.com/profile.php?id=' + userList[i].user_id %>" target="_blank">
+                          <%= userList[i].user_id %>
                        </a>
                     </td class="text-center">
-                    <td class="text-center"><%= employeeList[i].phone %></td>
+                    <td class="text-center"><%= userList[i].phone %></td>
                     <td>
-                       <ul class="list-group">
-                          <li class="list-group-item">Name: <%= employeeList[i].name %></li>
-                          <li class="list-group-item">FirstName: <%= employeeList[i].first_name %></li>
-                          <li class="list-group-item">LastName: <%= employeeList[i].last_name %></li>
-                          <li class="list-group-item">Email: <%= employeeList[i].email %></li>
-                       </ul>
+                       <pre><%- JSON.stringify(userList[i].info[0], null, 4) %></pre>
+                       <!-- <ul class="list-group">
+                          <li class="list-group-item">Name: <%= userList[i].name %></li>
+                          <li class="list-group-item">FirstName: <%= userList[i].first_name %></li>
+                          <li class="list-group-item">LastName: <%= userList[i].last_name %></li>
+                          <li class="list-group-item">Email: <%= userList[i].email %></li>
+                       </ul> -->
                     </td>
                 </tr>
             <% } %>
