@@ -18,14 +18,22 @@ var EmployeeSchema = mongoose.Schema({
 	positionId: Number,
 	organizationId: Number,
 	positionName: String,
-    organizationName: String,
-    departmentName: String,
+   organizationName: String,
+   departmentName: String,
 	groupName: String,
 	accountNumber: String,
 	bank: String,
 	firstName: String,
 	middleName: String,
-	lastName: String
+	lastName: String,
+	email: String,
+	deactivate: Boolean,
+	status: Number,
+	emTypeId: Number,
+	secondEmail: [{
+		email: String,
+		deactivate: Boolean
+	}]
 });
 
 module.exports = mongoose.model("Employee", EmployeeSchema);

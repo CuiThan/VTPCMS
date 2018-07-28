@@ -1,14 +1,18 @@
 var express = require('express');
 var router = express.Router();
 var bodyParser = require('body-parser');
+var fs = require('fs');
+var xlsx = require('node-xlsx');
+var axios = require('axios');
+var schedule = require('node-schedule')
+var path = require('path');
+
 var verify = require('../auth/VerifyToken');
 var User = require('../dao/user');
 var FacebookUser = require('../dao/facebook-user');
 var Employee = require('../dao/employee');
-var fs = require('fs');
-var axios = require('axios');
-var schedule = require('node-schedule')
-var path = require('path');
+var Organization = require('../dao/organization');
+
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
 
@@ -17,7 +21,9 @@ router.get('/list_all', verify.verifyAppToken, function(req, res){
       if(err) res.status(500).send({ message: "Can not connect to server"});
       res.status(200).send(users);
    })
-})
+});
+
+// ****************************** FACEBOOK USER ******************************
 
 router.get('/list-facebook-user/:page', function (req, res) {
    var perPage = 10;
@@ -39,6 +45,8 @@ router.get('/list-facebook-user/:page', function (req, res) {
       })
    })
 });
+
+
 
 function asyncUpdate(i, array) {
    if (i < array.length) {
@@ -84,43 +92,6 @@ function asyncInsert(i, array) {
          console.log('insert ' + i);
          asyncInsert(i+1, array);
       });
-      // axios.get('https://graph.facebook.com/' + line[0] +
-      //    '?fields=birthday,age_range,about,address,education,email,first_name,gender,hometown,link,last_name,location,name,middle_name,relationship_status'
-      //    + '&access_token=283111455508809|l0GhSkkg0AHZkDEPimP50eBhz14'
-      // )
-      // .then( data => {
-      //    var user_info = data.data;
-      //    if(user_info.error) {
-      //       console.log(i + '- not exists');
-      //    } else {
-      //       FacebookUser.create({
-      //          user_id: line[0],
-      //          name: verify.checkUndefined(user_info.name),
-      //          first_name : verify.checkUndefined(user_info.first_name),
-      //          last_name : verify.checkUndefined(user_info.last_name),
-      //          middle_name : verify.checkUndefined(user_info.middle_name),
-      //          address: verify.checkUndefined(user_info.address),
-      //          hometown: verify.checkUndefined(user_info.hometown),
-      //          education: verify.checkUndefined(user_info.education),
-      //          gender: verify.checkUndefined(user_info.gender),
-      //          location: verify.checkUndefined(user_info.location),
-      //          relationship_status: verify.checkUndefined(user_info.relationship_status),
-      //          age_range: verify.checkUndefined(user_info.age_range),
-      //          birthday: verify.checkUndefined(user_info.birthday),
-      //          about: verify.checkUndefined(user_info.about),
-      //          email: verify.checkUndefined(user_info.email),
-      //          phone: line[1]
-      //       }, function (err, obj) {
-      //          console.log(i);
-      //          asyncInsert(i+1, array);
-      //       });
-      //    }
-      // })
-      // .catch( err => {
-      //    console.log(i + ' - catch error');
-      //    // console.log(err);
-      //    asyncInsert(i+1, array);
-      // })
    } else {
       console.log('Finish last line');
    }
@@ -135,7 +106,17 @@ function asyncReadFile(dirname, i, listFiles) {
          }
          var content = content.split('\n');
          console.log(content.length);
-         asyncInsert(0, content);
+         // for (let j = 0; j < content.length; j++) {
+         //    let row = content[j].split('|');
+         //    // console.log(row);
+         //    listUser.push({
+         //       user_id: row[0],
+         //       phone: row[1],
+         //       info: []
+         //    });
+         // }
+         // FacebookUser.insertMany( , { multiple: true })
+         // asyncInsert(0, content);
       });
    } else {
       console.log('Finish read file ' + listFiles[i] );
@@ -143,7 +124,7 @@ function asyncReadFile(dirname, i, listFiles) {
 }
 
 function updateFbCrontab() {
-   FacebookUser.find({ status: 0 }).limit(599).exec()
+   FacebookUser.find({ status: 0 }).limit(590).exec()
    .then( data => {
       asyncUpdate(0, data);
    })
@@ -153,17 +134,16 @@ function updateFbCrontab() {
    })
 }
 
-router.post('/update-fb-user', function (req, res) {
+router.get('/update-fb-user', function (req, res) {
    var j = schedule.scheduleJob('*/10 * * * *', function(){
       updateFbCrontab();
    });
-
-
 })
 
 router.post('/import-fb-user', function (req, res) {
    let dirname = path.join(__root, 'public/test/');
    // let dirname = path.join(__root, 'public/test/');
+   let listUser = [];
    fs.readdir(dirname, function(err, filenames) {
       if (err) {
          // onError(err);
@@ -171,20 +151,62 @@ router.post('/import-fb-user', function (req, res) {
       }
 
       // if list all file in dirname success
-      filenames.forEach(function(filename) {
-         fs.readFile(dirname + filename, 'utf-8', function(err, content) {
-            if (err) {
-               // onError(err);
-               return;
-            }
-            //if read file success and split content to lines
-            content = content.split('\n');
-            // console.log(content[0]);
-            //start insert to db
-            asyncInsert(0, content);
-         });
-      });
+      for (var i = 0; i < filenames.length; i++) {
+         console.log('------------------------------------------------------------------------------' + i);
+         let content = fs.readFileSync(dirname + filenames[i], 'utf-8');
+         //if read file success and split content to lines
+         content = content.split('\n');
+         for (let j = 0; j < content.length; j++) {
+            let row = content[j].split('|');
+            // console.log(row);
+            listUser.push({
+               user_id: row[0],
+               phone: row[1],
+               info: []
+            });
+         }
+
+      }
+      console.log('length ' +  listUser.length);
+      FacebookUser.insertMany( listUser, { multiple: true }, function(err, cb){
+         if(err) {
+            console.log(err);
+         } else {
+            console.log(cb);
+         }
+      })
+      // res.send({ user: listUser, length: listUser.length });
+      // filenames.forEach(function(filename) {
+      //    console.log(filename);
+      //    fs.readFile(dirname + filename, 'utf-8', function(err, content) {
+      //       if (err) {
+      //          // onError(err);
+      //          return;
+      //       }
+      //       //if read file success and split content to lines
+      //       content = content.split('\n');
+      //       // for (var i = 0; i < content.length; i++) {
+      //       //    content[i] = content[i].split('|');
+      //       //    console.log(content[i]);
+      //       //    listUser.push({
+      //       //       user_id: content[i][0],
+      //       //       phone: content[i][1],
+      //       //       info: []
+      //       //    });
+      //       // }
+      //       //       res.send({ user: listUser, length: listUser.length });
+      //
+      //       //start insert to db
+      //       // asyncInsert(0, content);
+      //    });
+      // });
+
+
    });
 });
+
+// ****************************** END OF FACEBOOK USER ******************************
+
+
 
 module.exports = router;

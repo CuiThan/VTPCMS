@@ -138,24 +138,24 @@ router.post('/offer_price_search', verify.verifyAppToken, function(req, res){
    if(status != undefined && status > 0){
       searchQuery.status = status;
    }
-   if(fullName != undefined && fullName.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(fullName)) {
       searchQuery.fullName = new RegExp(fullName.trim());
    }
 
-   if(phone != undefined && phone.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(phone)) {
       phone = phone.replace(/\s+/g, '');
       searchQuery.phone = new RegExp(phone.trim());
    }
 
-   if(departurePlace != undefined && departurePlace.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(departurePlace)) {
       searchQuery.departurePlace = new RegExp(departurePlace.trim());
    }
 
-   if(destinationPlace != undefined && destinationPlace.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(destinationPlace)) {
       searchQuery.destinationPlace = new RegExp(destinationPlace.trim());
    }
 
-   if(service != undefined && service.trim() != '') {
+   if(verify.IsNotEmptyOrUndefined(service)) {
       searchQuery.service = new RegExp(service.trim());
    }
 

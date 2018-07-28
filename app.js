@@ -15,7 +15,7 @@ app.set('view engine', 'ejs');
 app.use(cors());
 
 app.get('/', function( req, res){
-   res.render('index', { title: 'Hey', message: 'Hello there!' })
+   res.redirect('/xlsx/employee.xlsx')
 })
 
 var AuthController = require(__root + 'auth/AuthController');
@@ -38,6 +38,9 @@ app.use('/api/post', PostController);
 
 var UserController  = require(__root + 'vtp_cms_api/UserController');
 app.use('/api/user', UserController);
+
+var EmployeeController  = require(__root + 'vtp_cms_api/EmployeeController');
+app.use('/api/employee', EmployeeController);
 
 var NoteController  = require(__root + 'vtp_cms_api/NoteController');
 app.use('/api/note', NoteController);

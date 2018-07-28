@@ -17,6 +17,7 @@ var FacebookUserSchema = new mongoose.Schema({
    // email: String,
    phone: String,
    status: { type: Number, default: 0 },
+   deactivate: Boolean,
    info: []
 });
 

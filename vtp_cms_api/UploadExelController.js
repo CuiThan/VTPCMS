@@ -80,6 +80,7 @@ router.get('/export/:id', function(req, res) {
 })
 // UPLOAD FILE EXEL
 router.post('/', exelUpoad.single('file'), function (req, res) {
+   console.log(req.body);
    if(req.file) {
 
       // Parse a buffer
@@ -88,8 +89,9 @@ router.post('/', exelUpoad.single('file'), function (req, res) {
       const workSheetsFromFile = xlsx.parse(path.join(__root, 'public/xlsx/' + req.file.filename));
       // res.send(workSheetsFromFile);
       exelObject = [];
-      for (var i = 0; i < workSheetsFromFile.length; i++) {
-         var sheet = workSheetsFromFile[i].data;
+      // for (var i = 0; i < workSheetsFromFile.length; i++) {
+      // start insert data
+         var sheet = workSheetsFromFile[0].data;
          var header = sheet[0];
          // return res.status(200).send({ data: sheet })
          var list_content = [];
@@ -100,7 +102,7 @@ router.post('/', exelUpoad.single('file'), function (req, res) {
             }
             list_content[j-1] = {
                index: j,
-               data: content
+               order: content
             }
          }
          var obj = {
@@ -111,10 +113,10 @@ router.post('/', exelUpoad.single('file'), function (req, res) {
             GUI_ID: "123456789",
             uploadTime: new Date()
          }
-
+         
          exelObject.push(obj);
          // res.status(200).send({ data: obj });
-      }
+      // }
 
       UploadExel.create(exelObject, function (err, cb) {
          if(err) return res.status(500).send({ status: 500, error: true, message: "Can not connect to server or query error", data: null });
