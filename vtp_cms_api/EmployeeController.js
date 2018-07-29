@@ -36,42 +36,17 @@ router.post('/update-employee', function(req, res){
 
 });
 
-function asyncGetChildLevelTwo(index, ListOrg, index_two, ListOrgTwo, res) {
-   // console.log('ListOrgTwo.length = ',ListOrgTwo.length);
-   if (index_two < ListOrgTwo.length) {
-      Organization.find({ orgParentId: ListOrg[index]['children'][index_two].organizationId }).select('_id name organizationId').exec()
-      .then( function(org) {
-         // console.log(org);
-         ListOrg[index]['children'][index_two]['children'] = org;
-         asyncGetChildLevelTwo(index, ListOrg, index_two + 1, ListOrgTwo, res);
-      }).catch( err => {
-         console.log(err);
-         return res.status(500).send({ status: 500 , error: true, message: "Can not connect to server"});
-      })
-   } else {
 
-      if (index + 1 == ListOrg.length) {
-         return res.status(200).send({ status: 200, error: false, message: "success", data: ListOrg});
-      }
-
-      asyncGetChildOrg(index + 1, ListOrg, res);
-   }
-}
-
-function asyncGetChildOrg(index, ListOrg, res) {
-   // console.log(ListOrg.length);
+//get child where orgLevel = 7
+function asyncGetChildOrg(index, ListOrg, res, date) {
 
    if (index < ListOrg.length) {
       Organization.find({ orgParentId : ListOrg[index].organizationId }).select('_id name organizationId').exec()
       .then(function (emp) {
          if(!emp) return res.status(200).send({ status: 200 , error: true, message: "organization is null"});
-         // console.log(index + '--' + emp.length);
          emp = JSON.parse(JSON.stringify(emp));
          ListOrg[index]['children'] = emp;
-         console.log('index = ' + index);
-         // ListOrg[index].children.push({emp: 'xxx'});
-         asyncGetChildLevelTwo(index, ListOrg, 0, emp, res);
-
+         asyncGetChildLevelTwo(index, ListOrg, 0, emp, res, date);
       }).catch( err => {
          console.log(err);
          return res.status(500).send({ status: 500 , error: true, message: "Can not connect to server"});
@@ -81,20 +56,92 @@ function asyncGetChildOrg(index, ListOrg, res) {
    }
 }
 
+//get child where orgLevel = 8
+function asyncGetChildLevelTwo(index, ListOrg, index_two, ListOrgTwo, res, date) {
+   // console.log('ListOrgTwo.length = ',ListOrgTwo.length);
+   if (index_two < ListOrgTwo.length) {
+      Organization.find({ orgParentId: ListOrg[index]['children'][index_two].organizationId }).select('_id name organizationId').exec()
+      .then( function(org) {
+         // console.log(org);
+         ListOrg[index]['children'][index_two]['children'] = org;
+         asyncGetChildLevelTwo(index, ListOrg, index_two + 1, ListOrgTwo, res, date);
+      }).catch( err => {
+         console.log(err);
+         return res.status(500).send({ status: 500 , error: true, message: "Can not connect to server"});
+      })
+   } else {
+
+      if (index + 1 == ListOrg.length) {
+         let finishDateTime = new Date();
+         console.log('total time : ',finishDateTime.getTime() - date);
+         return res.status(200).send({ status: 200, error: false, message: "success", data: ListOrg});
+      }
+
+      asyncGetChildOrg(index + 1, ListOrg, res, date);
+   }
+}
+
 router.get('/list_org', function( req, res) {
-   let OrgLevel6 = [];
-   let OrgLevel7 = [];
-   let OrgLevel8 = [];
+   let OrgLevel6 = [], lengLevel6 = 0;
+   let OrgLevel7 = [], lengLevel7 = 0;
+   let OrgLevel8 = [], lengLevel8 = 0;
+   let date = new Date()
+
+   console.log('start method  2',date.getTime());
    Organization.find({ orgLevel : 6 }).select('_id name organizationId').exec()
-   .then(function (emp) {
-      if(!emp) return res.status(200).send({ status: 200 , error: true, message: "organization level 6 is null"});
-      OrgLevel6 = JSON.parse(JSON.stringify(emp));
-      // asyncGetChildOrg(0, emp, res)
+   .then(function (org) {
+      if(!org) return res.status(200).send({ status: 200 , error: true, message: "organization is null"});
+      OrgLevel6 = JSON.parse(JSON.stringify(org));
+      // lengLevel6 = emp.length;
+      // return Organization.find({ orgLevel : 7 }).select('_id name organizationId orgParentId').exec()
+
       return Organization.aggregate([
          { $match: { orgLevel: 7 }},
-         {$group : { _id : "$orgParentId", children : {$push : { name: "$name", id: "$_id" }}}},
-      ]).exec()
+         { $group : { _id : "$orgParentId", children : {$push : { name: "$name", organizationId: "$organizationId" }}}},
+         { $project: { "orgParentId": "$_id", children: 1 } }
+      ])
 
+   })
+   .then(function (org) {
+      if(!org) return res.status(200).send({ status: 200 , error: true, message: "organization is null"});
+      OrgLevel7 = JSON.parse(JSON.stringify(org));
+      // lengLevel7 = emp.length;
+      // return Organization.find({ orgLevel : 8 }).select('_id name organizationId orgParentId').exec()
+      return Organization.aggregate([
+         { $match: { orgLevel: 8 }},
+         {$group : { _id : "$orgParentId", children : {$push : { name: "$name", organizationId: "$organizationId" }}}},
+         {$project: { "orgParentId": "$_id", children: 1 } }
+      ])
+   })
+   .then(function (org) {
+      if(!org) return res.status(200).send({ status: 200 , error: true, message: "organization is null"});
+      OrgLevel8 = JSON.parse(JSON.stringify(org));
+      // lengLevel8= emp.length;
+      // console.log(OrgLevel7[1]);
+      for (let i = 0; i < OrgLevel7.length; i++) {
+         for (let j = 0; j < OrgLevel7[i].children.length; j++) {
+            for (let k = 0; k < OrgLevel8.length; k++) {
+               if (OrgLevel8[k].orgParentId == OrgLevel7[i]['children'][j].organizationId) {
+                  // console.log(`i = ${i}`);
+                  OrgLevel7[i]['children'][j]['children'] = OrgLevel8[k]['children'];
+               }
+            }
+         }
+      }
+
+      for (let i = 0; i < OrgLevel6.length; i++) {
+         for (let k = 0; k < OrgLevel7.length; k++) {
+            if (OrgLevel7[k].orgParentId == OrgLevel6[i].organizationId) {
+               // console.log(`i = ${i}`);
+               OrgLevel6[i]['children'] = OrgLevel7[k];
+            }
+         }
+      }
+
+      res.send({ data: OrgLevel6 })
+      let currentDate = new Date();
+      console.log('end method  2', currentDate.getTime());
+      console.log('method 2: 3 query and 3 for loop, time =  ', currentDate.getTime() - date.getTime());
    })
    .catch( err => {
       console.log(err);
@@ -114,21 +161,81 @@ router.post('/org_list_child', function(req, res){
 })
 
 router.post('/org_list_parent', function(req, res){
-   console.log(req.body);
-   // if (req.body.orgLevel == undefined) {
-   //    return res.status(400).send({ status: 400, error: true, message: "OrgLevel is undefined", data: null });
-   // }
-   // Organization.find({ orgLevel : req.body.orgLevel }, function (err, emp) {
-   //    if(err) return res.status(500).send({ status: 500 , error: true, message: "Can not connect to server"});
-   //    res.status(200).send({ status: 200, error: false, message: "success", data: emp});
-   // })
-   Organization.find({ orgLevel : 6 }).select('_id name organizationId').exec()
-   .then(function (emp) {
-      if(!emp) return res.status(200).send({ status: 200 , error: true, message: "organization is null"});
-      emp = JSON.parse(JSON.stringify(emp));
-      asyncGetChildOrg(0, emp, res)
+   // console.log(req.body);
+   let OrgLevel6 = [];
+   let OrgLevel7 = [];
+   let OrgLevel8 = [];
+   let date = new Date();
 
-   }).catch( err => {
+   // Organization.find({ orgLevel : 6 }).select('_id name organizationId').exec()
+   // .then(function (emp) {
+   //    if(!emp) return res.status(200).send({ status: 200 , error: true, message: "organization is null"});
+   //    emp = JSON.parse(JSON.stringify(emp));
+   //    let date =  new Date()
+   //    asyncGetChildOrg(0, emp, res, date.getTime())
+   // }).catch( err => {
+   //    console.log(err);
+   //    res.status(500).send({ status: 500 , error: true, message: "Can not connect to server", log: err});
+   // })
+
+   // console.log('start method  2',date.getTime());
+   Organization.find({ orgLevel : 6 }).select('_id name organizationId').exec()
+   .then(function (org) {
+      if(!org) return res.status(200).send({ status: 200 , error: true, message: "organization is null"});
+      OrgLevel6 = JSON.parse(JSON.stringify(org));
+      // lengLevel6 = emp.length;
+      // return Organization.find({ orgLevel : 7 }).select('_id name organizationId orgParentId').exec()
+
+      return Organization.aggregate([
+         { $match: { orgLevel: 7 }},
+         { $group : { _id : "$orgParentId", children : {$push : { name: "$name", organizationId: "$organizationId", _id: "$_id" }}}},
+         { $project: { "orgParentId": "$_id", children: 1 } }
+      ])
+
+   })
+   .then(function (org) {
+      if(!org) return res.status(200).send({ status: 200 , error: true, message: "organization is null"});
+      OrgLevel7 = JSON.parse(JSON.stringify(org));
+      // lengLevel7 = emp.length;
+      // return Organization.find({ orgLevel : 8 }).select('_id name organizationId orgParentId').exec()
+      return Organization.aggregate([
+         { $match: { orgLevel: 8 }},
+         {$group : { _id : "$orgParentId", children : {$push : { name: "$name", organizationId: "$organizationId", _id: "$_id" }}}},
+         {$project: { "orgParentId": "$_id", children: 1 } }
+      ])
+   })
+   .then(function (org) {
+      if(!org) return res.status(200).send({ status: 200 , error: true, message: "organization is null"});
+      OrgLevel8 = JSON.parse(JSON.stringify(org));
+      // lengLevel8= emp.length;
+      // console.log(OrgLevel7[1]);
+      for (let i = 0; i < OrgLevel7.length; i++) {
+         for (let j = 0; j < OrgLevel7[i].children.length; j++) {
+            for (let k = 0; k < OrgLevel8.length; k++) {
+               if (OrgLevel8[k].orgParentId == OrgLevel7[i]['children'][j].organizationId) {
+                  // console.log(`i = ${i}`);
+                  // OrgLevel7[i]['children'][j]['children'] = OrgLevel8[k]['children'];
+                  OrgLevel7[i]['children'][j]['children'] = OrgLevel8[k]['children'];
+               }
+            }
+         }
+      }
+
+      for (let i = 0; i < OrgLevel6.length; i++) {
+         for (let k = 0; k < OrgLevel7.length; k++) {
+            if (OrgLevel7[k].orgParentId == OrgLevel6[i].organizationId) {
+               // console.log(`i = ${i}`);
+               OrgLevel6[i]['children'] = OrgLevel7[k]['children'];
+            }
+         }
+      }
+
+      let currentDate = new Date();
+      // console.log('end method  2', currentDate.getTime());
+      console.log('method 2: 3 query and 3 for loop, time =  ', currentDate.getTime() - date.getTime());
+      return res.status(200).send({ status: 200, error: false, message: "success", data: OrgLevel6});
+   })
+   .catch( err => {
       console.log(err);
       res.status(500).send({ status: 500 , error: true, message: "Can not connect to server", log: err});
    })
@@ -153,8 +260,7 @@ router.post('/get_employee_by_id', function (req, res) {
 })
 
 router.post('/export_inactive_account', function (req, res) {
-   Employee.find({ deactivate: true, secondEmail: {  $elemMatch: { deactivate: false }} })
-   .exec()
+   Employee.find({ deactivate: true, secondEmail: {  $elemMatch: { deactivate: false }} }).exec()
    .then(function (emp) {
       if (!emp) return res.status(500).send({ status: 500, error: true, message: "Can not connect to server or query error", data: null });
       let exelData = [],
@@ -182,22 +288,25 @@ router.post('/export_inactive_account', function (req, res) {
          "deactivate",
          "secondEmail"
       ];
+      //add header to exel data
       exelData.push(header);
-      console.log(emp.length);
+      // console.log(emp.length);
       // res.send(header);
       for (let i = 0; i < emp.length; i++ ) {
          let rowExel = [];
          let row = emp[i];
          for (let j = 0; j < header.length; j++) {
             let childRow = [];
+            // add data to row follow header structure
             childRow.push(row[header[j]]);
             rowExel.push(childRow);
          }
 
+         // add row to exel data
          exelData.push(rowExel);
       }
-      console.log(exelData.length);
-      //
+      // console.log(exelData.length);
+
       let buffer = xlsx.build([{name: "List User", data: exelData }]); // Returns a buffer
       // res.send({ data: JSON.stringify(exelData) })
       // res.attachment('users.xlsx');
@@ -205,7 +314,7 @@ router.post('/export_inactive_account', function (req, res) {
       let name = 'employee-' + date.getTime();
       let filename = `${name}.xlsx`;
       fs.writeFile(`public/xlsx/${filename}`, buffer, function (err) {
-         if (err) return res.send({ err: err });
+         if (err) return res.status(500).send({ status: 500, message: "Can not connect to server", error: true });
          // else res.redirect('http://localhost:3344' + '/xlsx/'+ filename);
          else res.status(200).send({ message: 'success', error: false, link:  `/xlsx/${filename}`})
          // else return res.render('index', { link: `/xlsx/${filename}`, name: filename});
@@ -214,7 +323,8 @@ router.post('/export_inactive_account', function (req, res) {
       });
       // res.status(200).send({ status: 200, message: "success", error: false, data: emp });
    }).catch( error => {
-      console.log(error);
+      // console.log(error);
+      return res.status(500).send({ status: 500, message: "Can not connect to server", error: true });
       // return res.send({ err: error });
    })
 })
@@ -310,34 +420,28 @@ router.post('/employee_search', function (req, res) {
    //    { $or: [ { 'email': /com.vn/}, { secondEmail: { $elemMatch: { email : /gmail/ } } }]},
    //    searchQueryAnd
    // ]
-   var query = searchQueryAnd.length ? ({ $and: searchQueryAnd }) : {};
-   for (let i = 0; i < list_level_two.length; i++) {
-      for (let j = 0; j < list_level_one.length; j++) {
-         if (list_level_two[i].includes(list_level_one[j])) {
-            list_level_one.splice(j, 1)
+
+   function filterOrgLevel(list_level_one, list_level_two) {
+      for (let i = 0; i < list_level_two.length; i++) {
+         for (let j = 0; j < list_level_one.length; j++) {
+            if (list_level_two[i].includes(list_level_one[j])) {
+               list_level_one.splice(j, 1)
+            }
          }
       }
-   }
 
-   for (let j = 0; j < list_level_two.length; j++) {
-      list_level_two[j] = list_level_two[j].split('|')[1];
-   }
-
-   for (let i = 0; i < list_level_three.length; i++) {
       for (let j = 0; j < list_level_two.length; j++) {
-         if (list_level_three[i].includes(list_level_two[j])) {
-            list_level_two.splice(j, 1)
-         }
+         list_level_two[j] = list_level_two[j].split('|')[1];
       }
    }
 
-   for (let j = 0; j < list_level_three.length; j++) {
-      list_level_three[j] = list_level_three[j].split('|')[1];
-   }
+   //filter organization by level from 6 to 8
+   filterOrgLevel(list_level_one, list_level_two);
+   filterOrgLevel(list_level_two, list_level_three);
 
    Organization.find({ orgParentId: { $in: list_level_one } }).select('organizationId').exec()
    .then( org => {
-
+      //get organizationId where orgLevel = 7
       if(!org) return res.status(200).send({ status: 200 , error: true, message: "organization is null"});
       org.forEach( function (elem) {
          list_level_two.push(elem.organizationId);
@@ -347,18 +451,22 @@ router.post('/employee_search', function (req, res) {
 
    }).then( org => {
 
+      // get organizationId where orgLevel = 8
       if(!org) return res.status(200).send({ status: 200 , error: true, message: "organization is null"});
       org.forEach( function (elem) {
          list_level_three.push(elem.organizationId);
       });
       // console.log('list_level_three', list_level_three);
-      searchQueryAnd.push({
-         organizationId: { $in: list_level_three }
-      })
+      if (list_level_three.length) {
+         searchQueryAnd.push({
+            organizationId: { $in: list_level_three }
+         })
+      }
 
-      console.log(searchQueryAnd);
-
+      // start search
       let query = searchQueryAnd.length ? { $and: searchQueryAnd } : {}
+      // console.log(query);
+      // console.log(list_level_three);
       return Employee.find(query).exec()
 
    }).then( org => {
@@ -416,8 +524,8 @@ router.post('/deactivate_account', function (req, res) {
       { $set: { deactivate : !req.body.status }},
       { new: true}
    ).exec(function( err, callback){
-      if (err) return res.status(500).send({ status: 500, message: "Can not connect to server", error: true, log: err });
-      console.log(callback);
+      if (err) return res.status(500).send({ status: 500, message: "Can not connect to server", error: true });
+      // console.log(callback);
       if (callback == null)
          return res.status(200).send({ status: 200, message: "Account not exist", error: true });
       else
