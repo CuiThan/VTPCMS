@@ -232,7 +232,7 @@ router.post('/org_list_parent', function(req, res){
 
       let currentDate = new Date();
       // console.log('end method  2', currentDate.getTime());
-      console.log('method 2: 3 query and 3 for loop, time =  ', currentDate.getTime() - date.getTime());
+      // console.log('method 2: 3 query and 3 for loop, time =  ', currentDate.getTime() - date.getTime());
       return res.status(200).send({ status: 200, error: false, message: "success", data: OrgLevel6});
    })
    .catch( err => {
@@ -456,7 +456,7 @@ router.post('/employee_search', function (req, res) {
       org.forEach( function (elem) {
          list_level_three.push(elem.organizationId);
       });
-      // console.log('list_level_three', list_level_three);
+      console.log('list_level_three', list_level_three);
       if (list_level_three.length) {
          searchQueryAnd.push({
             organizationId: { $in: list_level_three }

@@ -6,14 +6,22 @@ var mongoose = require('mongoose');
 // };
 
 var UploadExelSchema = new mongoose.Schema({
+   status: String,
+   fileName: String,
+   originalName: String,
    header: [],
+   inventory: Object,
    content: [
-      // { index: Number, data: {} }
+      // {
+      //    order: {},
+      //    index: Number,
+      //    status: String
+      // }
    ],
    cusId : String,
    rowCount: Number,
    GUI_ID: String,
-   uploadTime: Date,
+   uploadTime: Date
 });
 
 mongoose.model('UploadExel', UploadExelSchema);
