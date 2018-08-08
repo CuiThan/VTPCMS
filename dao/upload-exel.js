@@ -14,6 +14,7 @@ var UploadExelSchema = new mongoose.Schema({
    content: [
       // {
       //    order: {},
+      //    NLP: {},
       //    index: Number,
       //    status: String
       // }
@@ -21,7 +22,8 @@ var UploadExelSchema = new mongoose.Schema({
    cusId : String,
    rowCount: Number,
    GUI_ID: String,
-   uploadTime: Date
+   uploadTime: Date,
+   token: String
 });
 
 mongoose.model('UploadExel', UploadExelSchema);

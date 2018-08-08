@@ -7,6 +7,19 @@
   </head>
   <body>
     <h1 class="text-center mb-5"><%= title %></h1>
+   <form class="form-inline" id="searchForm" style="margin-bottom: 10px" method="POST" action="/api/user/list-facebook-user/1">
+   <!-- <form class="form-inline" id="searchForm" style="margin-bottom: 10px" method="POST" action="/api/user/facebook-search"> -->
+
+      <div class="form-group">
+         <label for="uid">UID</label>
+         <input type="text" class="form-control" id="uid" name="uid" >
+      </div>
+      <div class="form-group" style="margin-left: 10px">
+         <label for="phone">Phone</label>
+          <input type="text" class="form-control" id="phone" name="phone">
+      </div>
+      <button type="submit" style="margin-left: 10px" class="btn btn-primary">Search</button>
+   </form>
 
     <table class="table table-bordered">
         <thead>
@@ -15,6 +28,16 @@
                 <th scope="col" class="text-center">UID</th>
                 <th scope="col" class="text-center">Phone</th>
                 <th scope="col" class="text-center">Detail</th>
+            </tr>
+            <tr>
+
+                  <th scope="col" class="text-center"></th>
+                  <th scope="col" class="text-center">
+                  </th>
+                  <th scope="col" class="text-center">
+                  </th>
+                  <th scope="col" class="text-center"></th>
+               </form>
             </tr>
         </thead>
         <tbody>
@@ -74,4 +97,12 @@
   <script src="/javascripts/jquery-3.2.1.slim.min.js"></script>
   <script src="/javascripts/popper.min.js"></script>
   <script src="/javascripts/bootstrap.min.js"></script>
+  <script type="text/javascript">
+   $(function(){
+      // $('#searchForm').on('submit', function(event){
+      //   event.preventDefault();
+      //   console.log('err');
+      // });
+   });
+  </script>
 </html>

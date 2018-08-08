@@ -27,9 +27,10 @@ router.get('/list_all', verify.verifyAppToken, function(req, res){
 
 router.get('/list-facebook-user/:page', function (req, res) {
    var perPage = 10;
-    var page = req.params.page || 1;
+   console.log(req.params.page);
+   var page = req.params.page || 1;
 
-   FacebookUser.find({}).skip((perPage * page) - perPage).limit(perPage)
+   FacebookUser.find().skip((perPage * page) - perPage).limit(perPage)
    .exec(function(err, userList) {
       FacebookUser.count().exec(function(err, count) {
           if (err) return next(err)
@@ -42,6 +43,53 @@ router.get('/list-facebook-user/:page', function (req, res) {
               title: 'Danh sách tài khoản',
               // moment: moment
           })
+      })
+   })
+});
+
+router.post('/list-facebook-user/1', function (req, res) {
+   // router.post('/facbook-search', function (req, res) {
+   console.log(req.body);
+   // let x = 100;
+   // console.log(new RegExp(x.trim()));
+   var perPage = 10;
+   var page = 1;
+   const { uid, phone } = req.body;
+   let searchQuery = {};
+   if (uid != '') {
+      searchQuery['user_id'] = uid.trim();
+   }
+
+   if (phone != '') {
+      searchQuery['phone'] = new RegExp(phone.trim());
+   }
+
+   // console.log(searchQuery);
+
+   // console.log(searchQuery != null);
+   // console.log(searchQuery == null);
+   let date = new Date();
+   if (searchQuery.phone == undefined && searchQuery.user_id == undefined) {
+      // console.log('redirect');
+      return res.redirect('/api/user/list-facebook-user/1');
+   }
+
+   // .skip((perPage * page) - perPage).limit(perPage)
+   // FacebookUser.findOne(searchQuery)
+   FacebookUser.findOne(searchQuery)
+   .exec(function(err, userList) {
+      console.log(userList);
+      FacebookUser.count().exec(function(err, count) {
+         if (err) return next(err)
+         res.render('list-facebook-user', {
+              userList: userList ? [userList] : [],
+              maxPage: 13,
+              current: 1,
+              pages: Math.ceil(count / perPage),
+              index: perPage * page - perPage,
+              title: 'Danh sách tài khoản',
+              // moment: moment
+         })
       })
    })
 });
@@ -134,72 +182,95 @@ function updateFbCrontab() {
    })
 }
 
-router.get('/update-fb-user', function (req, res) {
-   var j = schedule.scheduleJob('*/10 * * * *', function(){
-      updateFbCrontab();
-   });
-})
+var j = schedule.scheduleJob('*/100 * * * *', function(){
+   updateFbCrontab();
+});
 
 router.post('/import-fb-user', function (req, res) {
+   // let dirname = path.join(__root, 'public/Data/');
    let dirname = path.join(__root, 'public/test/');
-   // let dirname = path.join(__root, 'public/test/');
-   let listUser = [];
+
    fs.readdir(dirname, function(err, filenames) {
       if (err) {
          // onError(err);
          return err;
       }
+      for (var i = 0; i < 655; i++) {
+         if (i%2 == 0){
+            for (var j = i; j < i+2; j++) {
+               let listUser = [];
+               console.log('------------------------------------------------------------------------------' + j);
+               let content = fs.readFileSync(dirname + filenames[j], 'utf-8');
+               //if read file success and split content to lines
+               content = content.split('\n');
+               for (let k = 0; k < content.length; k++) {
+                  let row = content[k].split('|');
 
-      // if list all file in dirname success
-      for (var i = 0; i < filenames.length; i++) {
-         console.log('------------------------------------------------------------------------------' + i);
-         let content = fs.readFileSync(dirname + filenames[i], 'utf-8');
-         //if read file success and split content to lines
-         content = content.split('\n');
-         for (let j = 0; j < content.length; j++) {
-            let row = content[j].split('|');
-            // console.log(row);
-            listUser.push({
-               user_id: row[0],
-               phone: row[1],
-               info: []
-            });
+                  listUser.push({
+                     user_id: row[0],
+                     phone: row[1],
+                     info: []
+                  });
+
+                  if (k % 100 == 0)
+                  {
+                     console.log(listUser);
+                     FacebookUser.insertMany( listUser, { multiple: true }, function(err, cb){
+                        if(err) {
+                           console.log(err);
+                        } else {
+                           console.log(cb);
+                        }
+                     });
+                     listUser = [];
+                  }
+
+                  if ((content.length- 1) % 100 != 0)
+                  {
+                     console.log(content.length- 1);
+                     FacebookUser.insertMany( listUser, { multiple: true }, function(err, cb){
+                        if(err) {
+                           console.log(err);
+                        } else if (cb) {
+                           console.log('insert success');
+                        } else {
+                           console.log('callback null');
+                        }
+                     });
+                  }
+
+               }
+
+
+
+            }
          }
-
       }
-      console.log('length ' +  listUser.length);
-      FacebookUser.insertMany( listUser, { multiple: true }, function(err, cb){
-         if(err) {
-            console.log(err);
-         } else {
-            console.log(cb);
-         }
-      })
-      // res.send({ user: listUser, length: listUser.length });
-      // filenames.forEach(function(filename) {
-      //    console.log(filename);
-      //    fs.readFile(dirname + filename, 'utf-8', function(err, content) {
-      //       if (err) {
-      //          // onError(err);
-      //          return;
-      //       }
-      //       //if read file success and split content to lines
-      //       content = content.split('\n');
-      //       // for (var i = 0; i < content.length; i++) {
-      //       //    content[i] = content[i].split('|');
-      //       //    console.log(content[i]);
-      //       //    listUser.push({
-      //       //       user_id: content[i][0],
-      //       //       phone: content[i][1],
-      //       //       info: []
-      //       //    });
-      //       // }
-      //       //       res.send({ user: listUser, length: listUser.length });
-      //
-      //       //start insert to db
-      //       // asyncInsert(0, content);
-      //    });
-      // });
+      // let listUser = [];
+      // for (var i = 0; i < filenames.length; i++) {
+      //    console.log('------------------------------------------------------------------------------' + i);
+      //    let content = fs.readFileSync(dirname + filenames[i], 'utf-8');
+      //    //if read file success and split content to lines
+      //    content = content.split('\n');
+      //    for (let j = 0; j < content.length; j++) {
+      //       let row = content[j].split('|');
+      //       // console.log(row);
+      //       listUser.push({
+      //          user_id: row[0],
+      //          phone: row[1],
+      //          info: []
+      //       });
+      //    }
+      // }
+      // console.log('length ' +  listUser.length);
+      // FacebookUser.insertMany( listUser, { multiple: true }, function(err, cb){
+      //    if(err) {
+      //       console.log(err);
+      //    } else {
+      //       console.log(cb);
+      //    }
+      // })
+
 
 
    });

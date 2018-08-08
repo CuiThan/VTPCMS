@@ -27,12 +27,11 @@ router.post('/update-employee', function(req, res){
    console.log('start update');
    Organization.updateMany(
       { },
-      { '$set': { activate: false }},
-      // {  upsert: true, strict: false }
+      { '$set': { activate: false }}
    ).exec(function (err, users) {
       if(err) return res.status(500).send({ message: "Can not connect to server", log: err});
       res.status(200).send({data: users});
-   })
+   });
 
 });
 

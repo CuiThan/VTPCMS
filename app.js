@@ -47,12 +47,16 @@ app.use('/api/note', NoteController);
 
 
 var UploadExelController  = require(__root + 'vtp_cms_api/UploadExelController');
-app.use('/api/exel', UploadExelController);
+app.use('/api/excel', UploadExelController);
 
 var CMSAPI = require(__root + 'vtp_cms_api/WebController');
 app.use('/api/cms', CMSAPI);
 
 var RadioAPI = require(__root + 'vtp_cms_api/RadioController');
 app.use('/api/radio', RadioAPI);
+
+process.on('unhandledRejection', (reason, promise) =>
+  console.error('Unhandled Rejection at: Promise %s %s', JSON.stringify(promise), reason),
+);
 
 module.exports = app;

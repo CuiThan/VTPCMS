@@ -1,6 +1,6 @@
 var mongoose = require('mongoose');
 var FacebookUserSchema = new mongoose.Schema({
-   user_id: String,
+
    // name: String,
    // first_name : String,
    // last_name : String,
@@ -15,7 +15,14 @@ var FacebookUserSchema = new mongoose.Schema({
    // birthday: Date,
    // about: String,
    // email: String,
-   phone: String,
+   user_id: {
+      type: String,
+      index: true
+   },
+   phone: {
+      type: String,
+      index: true
+   },
    status: { type: Number, default: 0 },
    deactivate: Boolean,
    info: []
