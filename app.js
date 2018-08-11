@@ -55,8 +55,8 @@ app.use('/api/cms', CMSAPI);
 var RadioAPI = require(__root + 'vtp_cms_api/RadioController');
 app.use('/api/radio', RadioAPI);
 
-process.on('unhandledRejection', (reason, promise) =>
-  console.error('Unhandled Rejection at: Promise %s %s', JSON.stringify(promise), reason),
-);
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at: Promise %s %s', JSON.stringify(promise), reason)
+});
 
 module.exports = app;

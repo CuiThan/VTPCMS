@@ -19,7 +19,7 @@ const GetOrderPriceUrl = "https://api.viettelpost.vn/api/tmdt/getPrice";
 const InsertOrderUrl = "https://api.viettelpost.vn/api/tmdt/InsertOrder";
 const NotifyUrl = "https://io.viettelpost.vn/notification/v1.0/notification";
 // const MAX_FILE_SIZE = 1048576;
-const MAX_FILE_SIZE = 102400;
+const MAX_FILE_SIZE = 1048576;
 
 // var domain = "http://localhost:3344";
 var domain = "http://125.212.238.119:3344";
@@ -199,9 +199,10 @@ function checkOrderCronJob() {
    })
    .then( processingFile => {
       if (processingFile) {
-         console.log(processingFile.length);
+         console.log("Number of excel file have status New/Change : ", ListFileChanged.length);
          // checkOrderToInsert(processingFile);
-         checkOrderToInsertTest(processingFile);
+         // checkOrderToInsertTest(processingFile);
+         checkOrderToInsertTest(ListFileChanged);
          // return res.status(200).send({ status: 200, error: true, message: "success", data: processingFile });
       }
 
@@ -221,17 +222,24 @@ function updateCheckInfoStatusMongo(list_check_info, id) {
    const listPromise = list_check_info.map( function(order) {
       // console.log(id);
       // console.log(order.NLP.province.code);
+   // if (order.message.length) {
+      // console.log(order.index);
+      // let optionsInsert = {};
+      // console.log(order.message.length);
+      // console.log(order.message[0]);
+      // if (order.message.length > 1) {
+      //    optionsInsert = { $addToSet: { "content.$.message":  { $each: order.message } }, $set: { "content.$.status": "Error" } };
+      // } else {
+      //    optionsInsert = { $addToSet: { "content.$.message":  order.message[0] }, $set: { "content.$.status": "Error" } };
+      // }
       return new Promise( (resolve, reject) => {
-         // if (order.message.length) {
-            // console.log('start test check info');
+
             UploadExel.findOneAndUpdate(
                { "_id": id, "content.index" : order.index  },
-               { $set: {
-                  "content.$.message": order.message.length ? order.message : [],
-                  "content.$.status": "Error"
-               }}
+               { $set: { "content.$.status": "Error" } }
             ).exec()
             .then( (checkInfoRes) => {
+               // console.log("checkInfoRes ", checkInfoRes);
                // console.log('line 234', checkInfoRes);
                if ( checkInfoRes) {
                   // update NLP success
@@ -248,9 +256,51 @@ function updateCheckInfoStatusMongo(list_check_info, id) {
                console.log('error in updateCheckInfoStatusMongo');
                reject('error')
             });
-         // }
 
       })
+               // }
+   });
+
+   return Promise.all(listPromise);
+}
+
+function updateSetInvalidMessageStatusMongo(list_check_info, id) {
+   // console.log('line 219', list_check_info);
+   const listPromise = list_check_info.map( function(order) {
+      // console.log(id);
+      // console.log(order.NLP.province.code);
+   // if (order.message.length) {
+      // console.log(order.index);
+      let optionsInsert = {};
+      // console.log(order.message.length);
+      // console.log(order.message[0]);
+      return new Promise( (resolve, reject) => {
+
+            UploadExel.findOneAndUpdate(
+               { "_id": id, "content.index" : order.index  },
+               { $addToSet: { "content.$.message":  { $each : order.message } } }
+            ).exec()
+            .then( (checkInfoRes) => {
+               // console.log("checkInfoRes ", checkInfoRes);
+               // console.log('line 234', checkInfoRes);
+               if ( checkInfoRes) {
+                  // update NLP success
+                  // console.log(res);
+                  resolve('success');
+               } else {
+                  // update NLP error
+                  reject('error')
+                  // reject(res);
+               }
+            })
+            .catch( err => {
+               // console.log(err);
+               console.log('error in updateCheckInfoStatusMongo');
+               reject('error')
+            });
+
+      })
+               // }
    });
 
    return Promise.all(listPromise);
@@ -384,7 +434,7 @@ function updateStatusValidateError(listIndexValidateError, fileId) {
 function updateStatusValidateSuccess(listValidateSuccess, fileId) {
    if (listValidateSuccess.length) {
       let validateSuccessPromise = listValidateSuccess.map( function(item) {
-         console.log(item.price);
+         // console.log(item.price);
          let lenOfListFee = item.price.length;
          let fee_other = 0;
          for (let i = 2; i < lenOfListFee - 2; i++) {
@@ -517,9 +567,10 @@ async function checkOrderToInsertTest(array) {
    // check each file one by one
    try {
       for (let item in array) {
+         console.log('<----------------------------------------------------------------------->');
          console.log(item + '. ' + array[item]._id);
          await checkListAllOrder(array[item], array[item].token);
-         console.log('------------------------------------------');
+         console.log('<----------------------------------------------------------------------->');
       }
    } catch (e) {
       console.log('Error on checkOrderToInsert function');
@@ -540,46 +591,52 @@ async function checkListAllOrder(list, token) {
       let inventory = list.inventory,
           list_order = list.content;
 
-      let listInfoValid = [];
-      let listCheckInfoResponse = [];
-      for (let i = 0; i < list_order.length; i++) {
-         let order_item = list_order[i].order;
-         let message = [];
-         for (let key in order_item) {
-            if (list_status_required.includes(key) && !order_item[key]) {
-               message.push(verify.formatMessageError(list_status[key]))
-            }
-            if (key == "DIEN_THOAI_KHNHAN" && !verify.IsPhoneNumber(order_item[key]) ) {
-               message.push("Số điện thoại người nhận không hợp lệ");
-            }
-         }
-         // console.log("message.length" , message.length);
-         if (message.length == 0) {
-            // console.log('push to list info valid');
-            listInfoValid.push(list_order[i]);
-         }
-
-         listCheckInfoResponse.push({
-            index: list_order[i].index,
-            message: message
-         })
-      }
+      // let listInfoValid = [];
+      // let listCheckInfoResponse = [];
+      // for (let i = 0; i < list_order.length; i++) {
+      //    let order_item = list_order[i].order;
+      //    let message = [];
+      //    for (let key in order_item) {
+      //       if (list_status_required.includes(key) && !order_item[key]) {
+      //          message.push(verify.formatMessageError(list_status[key]))
+      //       }
+      //       if (key == "DIEN_THOAI_KHNHAN" && !verify.IsPhoneNumber(order_item[key]) ) {
+      //          message.push("Số điện thoại người nhận không hợp lệ");
+      //       }
+      //    }
+      //    // console.log("message.length" , message.length);
+      //    if (message.length == 0) {
+      //       // console.log('push to list info valid');
+      //       listInfoValid.push(list_order[i]);
+      //    }
+      //
+      //    listCheckInfoResponse.push({
+      //       index: list_order[i].index,
+      //       message: message
+      //    })
+      // }
 
       // console.log(listInfoValid);
 
-      let updateStatusCheckInfoResponse = await updateCheckInfoStatusMongo(listCheckInfoResponse, list._id);
-      // console.log(updateStatusCheckInfoResponse);
-      if (updateStatusCheckInfoResponse.includes('error')) {
-         // call noti API
-         return Promise.reject('exit');
-      }
+      // let updateStatusCheckInfoResponse = await updateCheckInfoStatusMongo(listCheckInfoResponse, list._id);
+      // // console.log(updateStatusCheckInfoResponse);
+      // if (updateStatusCheckInfoResponse.includes('error')) {
+      //    // call noti API
+      //    return Promise.reject('exit');
+      // }
 
       // console.log(listCheckInfoResponse);
 
       //add address to check NLP
+      // let listReceiverAddress = [];
+      // // const listPromise = list_order.map( function(item) {
+      // const listPromise = listInfoValid.map( function(item) {
+      //    listReceiverAddress.push(item.order.DIACHI_KHNHAN);
+      // });
+
       let listReceiverAddress = [];
       // const listPromise = list_order.map( function(item) {
-      const listPromise = listInfoValid.map( function(item) {
+      const listPromise = list_order.map( function(item) {
          listReceiverAddress.push(item.order.DIACHI_KHNHAN);
       });
 
@@ -589,25 +646,25 @@ async function checkListAllOrder(list, token) {
           console.log("Get NLP API error");
          return Promise.reject('exit');
       }
-      console.log('587', NLPResponse);
+      // console.log('587', NLPResponse);
       // console.log(NLPResponse[0].province.code);
       let listIndexNLPError = [], listNLPSuccess = [];
       for (let i = 0; i < NLPResponse.length; i++) {
          // console.log(NLPResponse[i].province.code);
-         listInfoValid[i].NLP.RECEIVER_PROVINCE = NLPResponse[i].province.code;
-         listInfoValid[i].NLP.RECEIVER_DISTRICT = NLPResponse[i].district.code;
-         listInfoValid[i].NLP.RECEIVER_WARD = NLPResponse[i].commune.code;
+         list_order[i].NLP.RECEIVER_PROVINCE = NLPResponse[i].province.code;
+         list_order[i].NLP.RECEIVER_DISTRICT = NLPResponse[i].district.code;
+         list_order[i].NLP.RECEIVER_WARD = NLPResponse[i].commune.code;
 
          if (NLPResponse[i].province.code == 0 && NLPResponse[i].district.code == 0 && NLPResponse[i].commune.code == 0) {
             // insert index to listIndexNLPError
-            listIndexNLPError.push(listInfoValid[i].index)
+            listIndexNLPError.push(list_order[i].index)
          } else {
             //insert to listNLPSuccess
-            listNLPSuccess.push(listInfoValid[i]);
+            listNLPSuccess.push(list_order[i]);
          }
       }
 
-      let updateNLPMongoRes = await updateNLPStatusMongo(listInfoValid, list._id);
+      let updateNLPMongoRes = await updateNLPStatusMongo(list_order, list._id);
       if (updateNLPMongoRes.includes('error')) {
          // call noti API
          console.log("update NLP status on mongodb error");
@@ -636,6 +693,68 @@ async function checkListAllOrder(list, token) {
       }
 
       console.log('List index ValidateError', listIndexValidateError);
+
+      let listInfoValid = [], listIndexInfoInvalid = [];
+      let listCheckInfoResponse = [];
+
+      // check info valid or missing  of (validate error + validate success)
+      for (let i = 0; i < listNLPSuccess.length; i++) {
+         let order_item = listNLPSuccess[i].order;
+         console.log('index = ', listNLPSuccess[i].index);
+         let message = [];
+         for (let key in order_item) {
+            if (list_status_required.includes(key) && !order_item[key]) {
+               message.push(verify.formatMessageError(list_status[key]))
+            }
+            else if (key == "DIEN_THOAI_KHNHAN" && !verify.IsPhoneNumber(order_item[key]) ) {
+               message.push("Số điện thoại người nhận không hợp lệ");
+            }
+         }
+         // console.log(message);
+         // console.log("message.length" , message.length);
+         if (message.length) {
+            listIndexInfoInvalid.push(listNLPSuccess[i].index);
+            listCheckInfoResponse.push({
+               index: listNLPSuccess[i].index,
+               message: message
+            })
+         }
+
+
+
+      }
+
+      // if validate sucess -> check info valid or missing
+      // for (let i = 0; i < listValidateSuccess.length; i++) {
+      //    let order_item = listValidateSuccess[i].order;
+      //    let message = [];
+      //    for (let key in order_item) {
+      //       if (list_status_required.includes(key) && !order_item[key]) {
+      //          message.push(verify.formatMessageError(list_status[key]))
+      //       }
+      //       else if (key == "DIEN_THOAI_KHNHAN" && !verify.IsPhoneNumber(order_item[key]) ) {
+      //          message.push("Số điện thoại người nhận không hợp lệ");
+      //       }
+      //    }
+      //    // console.log("message.length" , message.length);
+      //
+      //    if (message.length == 0) {
+      //       // console.log('push to list info valid');
+      //       listInfoValid.push(listValidateSuccess[i]);
+      //    }
+      //
+      //    else {
+      //       listIndexInfoInvalid.push(listValidateSuccess[i].index);
+      //       listCheckInfoResponse.push({
+      //          index: listValidateSuccess[i].index,
+      //          message: message
+      //       })
+      //    }
+      //
+      // }
+
+      // console.log(listInfoValid);
+
       // console.log(listValidateSuccess);
       //END OF CHECK PRICE
 
@@ -684,6 +803,28 @@ async function checkListAllOrder(list, token) {
          console.log('Update status validate success on mongodb error');
          return Promise.reject('exit');
       }
+
+      console.log("listIndexInfoInvalid ", listIndexInfoInvalid);
+      // console.log("listCheckInfoResponse ", listCheckInfoResponse);
+      let updateStatusCheckInfoResponse = await updateCheckInfoStatusMongo(listCheckInfoResponse, list._id);
+
+      // console.log("updateStatusCheckInfoResponse ", updateStatusCheckInfoResponse);
+      if (updateStatusCheckInfoResponse.includes('error')) {
+         // call noti API
+         console.log('Update status ERROR on mongodb error');
+         return Promise.reject('exit');
+      }
+
+      let updateInvalidMessageRes = await updateSetInvalidMessageStatusMongo(listCheckInfoResponse, list._id);
+
+      // console.log("updateInvalidMessageRes ", updateInvalidMessageRes);
+      if (updateInvalidMessageRes.includes('error')) {
+         // call noti API
+         console.log('Update status of order missing info on mongodb error');
+         return Promise.reject('exit');
+      }
+
+      console.log('Total error = ', listIndexNLPError.length + listIndexInfoInvalid.length);
 
       // update status for insert order error on mongodb
       // let updateStatusInsertErrorRes = await updateStatusInsertError(listIndexInsertError, list._id);
@@ -741,7 +882,7 @@ async function checkListAllOrder(list, token) {
 
       axios.post(NotifyUrl, notifyObject, notifyHeader)
       .then( success => {
-         console.log(success);
+         // console.log(success);
          if (success) {
             console.log('notify success');
             return Promise.resolve('notify success');
@@ -750,6 +891,7 @@ async function checkListAllOrder(list, token) {
 
       })
       .catch( err => {
+         console.log('notify error');
          sendNotify(notifyObject, notifyHeader);
          // return Promise.reject('notify error');
       });
@@ -1006,7 +1148,13 @@ router.post('/upload', exelUpoad.single('file'), function (req, res) {
             let row_data = {};
             if(sheet[j].length){
                for (let k = 0; k < standardHeader.length; k++) {
-                  row_data[standardHeader[k]] = sheet[j][k] ? sheet[j][k] : "";
+                  if (standardHeader[k] == "DIEN_THOAI_KHNHAN") {
+                     row_data[standardHeader[k]] = sheet[j][k] ? ( '0' + sheet[j][k] ) : "";
+                  }
+                  else {
+                     row_data[standardHeader[k]] = sheet[j][k] ? sheet[j][k] : "";
+                  }
+
                }
 
                list_row_data[index] = {
@@ -1084,9 +1232,11 @@ router.post('/export', function(req, res) {
    if(file_id == undefined) {
       return res.status(400).send({ status: 400, error: true, message: "file_id is undefined", data: null });
    }
+   console.log(file_id);
    var exelData = [];
 
-   UploadExel.findById(file_id).exec( function(err, data) {
+   UploadExel.findOne({ "_id": file_id }).exec( function(err, data) {
+      console.log(data);
       if(err) return res.status(500).send({ status: 500, error: true, message: "Can not connect to server or query error", data: null });
       if(!data) return res.status(200).send({ status: 200, error: true, message: `file_id ${file_id} not exists`, data: null });
 
@@ -1128,6 +1278,7 @@ router.post('/export', function(req, res) {
             status: 200,
             error: false,
             message: "success",
+            download_url: `/xlsx/${filename}`,
             data: { download_url: `/xlsx/${filename}` }
          });
          // return res.redirect(`/xlsx/${filename}`);
@@ -1182,38 +1333,43 @@ router.post('/edit_order_item', async function (req, res) {
       }
 
 
-      // change status of order item to "Change" then run
-      // let updateDataOnMongo = await new Promise( (resolve, reject) => {
-      //    UploadExel.findOneAndUpdate(
-      //       { "_id": file_id, "content.index" : index },
-      //       { $set: {
-      //          "content.$.status": "Change",
-      //          "content.$.order.DICH_VU_KHAC": order.ORDER_SERVICE_ADD,
-      //          "content.$.order.DICH_VU": order.ORDER_SERVICE,
-      //          "content.$.order.TEN_NGUOI_NHAN": order.RECEIVER_FULLNAME,
-      //          "content.$.order.DIACHI_KHNHAN": order.RECEIVER_ADDRESS,
-      //          "content.$.order.DIEN_THOAI_KHNHAN": order.RECEIVER_PHONE,
-      //          "content.$.order.NOI_DUNG_HANG_HOA": order.PRODUCT_NAME,
-      //          "content.$.order.TRI_GIA_HANG": order.PRODUCT_PRICE,
-      //          "content.$.order.TRONG_LUONG_GRAM": order.PRODUCT_WEIGHT,
-      //          "content.$.order.TIEN_THU_HO": order.MONEY_COLLECTION,
-      //       }}
-      //    ).then( (response) =>{
-      //       // if update success
-      //       // console.log(response);
-      //       if (response) {
-      //          return resolve('success');
-      //       }
-      //       resolve(`Can not update, file_id ${file_id} not exits`);
+      // check if file_id exists and change status of order item to "Change" then run
+      let order_item = {};
+      let updateDataOnMongo = await new Promise( (resolve, reject) => {
+         UploadExel.findOneAndUpdate(
+            { "_id": file_id, "content.index" : index },
+            { $set: {
+               "content.$.status": "Change",
+               "content.$.order.DICH_VU_KHAC": order.ORDER_SERVICE_ADD,
+               "content.$.order.DICH_VU": order.ORDER_SERVICE,
+               "content.$.order.TEN_NGUOI_NHAN": order.RECEIVER_FULLNAME,
+               "content.$.order.DIACHI_KHNHAN": order.RECEIVER_ADDRESS,
+               "content.$.order.DIEN_THOAI_KHNHAN": order.RECEIVER_PHONE,
+               "content.$.order.NOI_DUNG_HANG_HOA": order.PRODUCT_NAME,
+               "content.$.order.TRI_GIA_HANG": order.PRODUCT_PRICE,
+               "content.$.order.TRONG_LUONG_GRAM": order.PRODUCT_WEIGHT,
+               "content.$.NLP.RECEIVER_PROVINCE": order.RECEIVER_PROVINCE,
+               "content.$.NLP.RECEIVER_DISTRICT": order.RECEIVER_DISTRICT,
+               "content.$.NLP.RECEIVER_WARD": order.RECEIVER_WARD,
+            }},
+            { new: true }
+         ).then( (response) =>{
+            // if update success
+            // console.log(response);
+            if (response) {
+               order_item = response.content[index-1];
+               return resolve('success');
+            }
+            resolve(`Can not update, file_id ${file_id} not exits`);
+
+         }).catch( err => {
+            reject('error');
+         })
+      });
       //
-      //    }).catch( err => {
-      //       reject('error');
-      //    })
-      // });
-      //
-      // if (updateDataOnMongo != "success") {
-      //    return res.status(500).send({status: 500, message: updateDataOnMongo, error: true, data: null });
-      // }
+      if (updateDataOnMongo != "success") {
+         return res.status(500).send({status: 500, message: updateDataOnMongo, error: true, data: null });
+      }
       // let NLPData = {};
       //
       // let checkNLPResponse = await new Promise((resolve, reject) => {
@@ -1241,6 +1397,19 @@ router.post('/edit_order_item', async function (req, res) {
       // if (checkNLPResponse != "success") {
       //    return res.status(500).send({status: 500, message: checkNLPResponse, error: true, data: null });
       // }
+      let list_status_required = verify.list_status_require;
+      let list_status = verify.list_status;
+      let message = [];
+      // console.log(order_item.order);
+      for (let key in order_item.order) {
+         if (list_status_required.includes(key) && !order_item.order[key]) {
+            console.log(key + '--' + order_item.order[key]);
+            message.push(verify.formatMessageError(list_status[key]))
+         }
+         else if (key == "DIEN_THOAI_KHNHAN" && !verify.IsPhoneNumber(order_item.order[key]) ) {
+            message.push("Số điện thoại người nhận không hợp lệ");
+         }
+      }
 
       let checkValidateResponse = await new Promise((resolve, reject) => {
          let order_info = {
@@ -1259,64 +1428,82 @@ router.post('/edit_order_item', async function (req, res) {
          }
          axios.post(GetOrderPriceUrl, order_info)
          .then( response => {
-            console.log("1499", response.data);
-            console.log("1450", response.error);
+            // console.log("1365. ", response.data);
+            // console.log("1450", response.error);
             if (response.data.error) {
-               return resolve(response.data.message)
+               return resolve('Bảng giá không áp dụng cho hàng trình này')
             }
             resolve(response.data)
          })
          .catch( err => {
-            reject('Can not connect to server')
+            console.log(err);
+            reject('Bảng giá không áp dụng cho hàng trình này')
          })
       });
 
 
 
-      console.log("Check validate : ", checkValidateResponse);
+      // console.log("Check validate : ", checkValidateResponse);
 
       if (typeof checkValidateResponse == 'string') {
-         return res.status(500).send({status: 500, message: checkValidateResponse, error: true, data: null });
-      }
-
-      // console.log("1519", checkValidateResponse);
-
-      // update status "ValidateSuccess" to mongo
-      let lenOfListFee = checkValidateResponse.length;
-      let fee_other = 0;
-      for (let i = 2; i < lenOfListFee - 2; i++) {
-         fee_other +=  Number(checkValidateResponse[i].PRICE);
-      }
-      UploadExel.findOneAndUpdate(
-         { _id: file_id, "content.index": index },
-         {  $set: {
-            "content.$.status" : "ValidateSuccess",
-            "content.$.order.DICH_VU_KHAC": order.ORDER_SERVICE_ADD,
-            "content.$.order.DICH_VU": order.ORDER_SERVICE,
-            "content.$.order.TEN_NGUOI_NHAN": order.RECEIVER_FULLNAME,
-            "content.$.order.DIACHI_KHNHAN": order.RECEIVER_ADDRESS,
-            "content.$.order.DIEN_THOAI_KHNHAN": order.RECEIVER_PHONE,
-            "content.$.order.NOI_DUNG_HANG_HOA": order.PRODUCT_NAME,
-            "content.$.order.TRI_GIA_HANG": order.PRODUCT_PRICE,
-            "content.$.order.TRONG_LUONG_GRAM": order.PRODUCT_WEIGHT,
-            "content.$.order.TIEN_THU_HO": order.MONEY_COLLECTION,
-            "content.$.FEE.MONEY_TOTAL": Number(checkValidateResponse[0].PRICE),
-            "content.$.FEE.MONEY_TOTALVAT": Number(checkValidateResponse[1].PRICE),
-            "content.$.FEE.MONEY_TOTALFEE": Number(checkValidateResponse[lenOfListFee - 1].PRICE),
-            "content.$.FEE.MONEY_FEE": Number(checkValidateResponse[lenOfListFee - 2].PRICE),
-            "content.$.FEE.MONEY_FEECOD": fee_other,
-            "content.$.NLP.RECEIVER_PROVINCE": order.RECEIVER_PROVINCE,
-            "content.$.NLP.RECEIVER_DISTRICT": order.RECEIVER_DISTRICT,
-            "content.$.NLP.RECEIVER_WARD": order.RECEIVER_WARD
-         }},
-         function (response) {
-            console.log("response of edit ",response);
-            if (response) {
-               return res.status(500).send({status: 500, message: 'edit order success but update status on database error', error: true, data: null });
+         message.push(checkValidateResponse);
+         UploadExel.findOneAndUpdate(
+            { _id: file_id, "content.index": index },
+            {  $set: {
+               "content.$.status" : "ValidateError",
+               "content.$.message" : message,
+            }},
+            function (err, response) {
+               // console.log("response of update validate error ", response);
+               if (err || !response) {
+                  return res.status(500).send({status: 500, message: 'edit order success but update status on database error', error: true, data: null });
+               }
+               // console.log('update status validate error');
+               // return;
+               else {
+                  res.status(200).send({ status: 200, message: checkValidateResponse, error: true, data: null });
+                  res.end();
+               }
             }
-            return res.status(200).send({status: 200, message: 'Edit order success', error: false, data: null });
+         )
+         // return res.status(500).send({status: 500, message: checkValidateResponse, error: true, data: null });
+      }
+      else {
+         // console.log("1400", checkValidateResponse);
+         // update status "ValidateSuccess" to mongo
+         let lenOfListFee = checkValidateResponse.length;
+         let fee_other = 0;
+         for (let i = 2; i < lenOfListFee - 2; i++) {
+            fee_other +=  Number(checkValidateResponse[i].PRICE);
          }
-      )
+         console.log("1426", message);
+         UploadExel.findOneAndUpdate(
+            { _id: file_id, "content.index": index },
+            {  $set: {
+               "content.$.status" : message.length ? "Error" : "ValidateSuccess",
+               "content.$.message" : message.length ? message : [],
+               "content.$.FEE.MONEY_TOTAL": Number(checkValidateResponse[0].PRICE),
+               "content.$.FEE.MONEY_TOTALVAT": Number(checkValidateResponse[1].PRICE),
+               "content.$.FEE.MONEY_TOTALFEE": Number(checkValidateResponse[lenOfListFee - 1].PRICE),
+               "content.$.FEE.MONEY_FEE": Number(checkValidateResponse[lenOfListFee - 2].PRICE),
+               "content.$.FEE.MONEY_FEECOD": fee_other,
+               "content.$.NLP.RECEIVER_PROVINCE": order.RECEIVER_PROVINCE,
+               "content.$.NLP.RECEIVER_DISTRICT": order.RECEIVER_DISTRICT,
+               "content.$.NLP.RECEIVER_WARD": order.RECEIVER_WARD
+            }},
+            function (err, response) {
+               // console.log("response of edit ", response);
+               if (err || !response) {
+                  return res.status(500).send({status: 500, message: 'edit order success but update status on database error', error: true, data: null });
+               } else {
+                  res.status(200).send({status: 200, message: 'edit order success', error: false, data: null });
+                  res.end();
+               }
+
+            }
+         )
+      }
+
 
 
 
@@ -2477,4 +2664,41 @@ function checkOrderItem(item, len, inventory, list_order_id, token) {
 
    })
 }
+
+router.get('/info', async function(req, res) {
+   let list_cus_id = [
+    "1702545",
+    "1446107",
+    "1486445",
+    "722",
+    "1464987",
+    "1706454",
+    "1709259",
+    "1709243",
+    "1710799",
+    "1364830",
+    "1445800",
+    "1710795",
+    "1712017",
+    "1552463",
+    "1448374",
+    "1443214",
+    "1510563"
+];
+   let promises = list_cus_id.map( function(cus_id){
+      console.log(cus_id);
+      return new Promise((resolve, reject) => {
+         UploadExel.find( { cusId : cus_id }, { inventory: 1 }).exec( (err, response) => {
+            // console.log(err);
+            // console.log(response);
+            resolve(response[0]);
+         })
+      });
+   })
+
+   let list = await Promise.all(promises);
+
+   res.send({ data: list });
+
+})
 module.exports = router;

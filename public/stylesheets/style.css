@@ -1,8 +1,34 @@
 body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  /*padding: 50px;*/
+  /*font: "Lucida Grande", Helvetica, Arial, sans-serif;*/
 }
 
 a {
   color: #00B7FF;
+}
+
+.number-header {
+	list-style-type: decimal;
+}
+
+img {
+		width: 100% !important;
+}
+
+.mt-10{
+	margin-top: 15px;
+}
+
+.image {
+	margin-top: 15px;
+}
+
+.title {
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.step {
+	font-size: 15px;
+	font-weight: 500;
 }
