@@ -182,9 +182,9 @@ function updateFbCrontab() {
    })
 }
 
-var j = schedule.scheduleJob('*/100 * * * *', function(){
-   updateFbCrontab();
-});
+// var j = schedule.scheduleJob('*/10 * * * *', function(){
+//    updateFbCrontab();
+// });
 
 router.post('/import-fb-user', function (req, res) {
    // let dirname = path.join(__root, 'public/Data/');

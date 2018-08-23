@@ -6,16 +6,21 @@ var axios = require('axios');
 var multer = require('multer');
 var path = require('path');
 var xlsx = require('node-xlsx');
+var jwt = require('jsonwebtoken');
 var schedule = require('node-schedule');
 
 var verify = require('../auth/VerifyToken');
+// var shortenUrl = require('../auth/ShortenUrl');
 var UploadExel = require('../dao/upload-exel');
+var DailyReportExcel = require('../dao/daily-report-excel');
+var FileManagement = require('../dao/file-management');
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
 
 // const NLP_URL  = "http://address-address.oc.viettelpost.vn/parser";
-const NLP_URL  = " http://35.240.247.10/parser";
+const NLP_URL  = "http://35.240.247.10/parser";
 const GetOrderPriceUrl = "https://api.viettelpost.vn/api/tmdt/getPrice";
+const GetOrderDetailUrl = "https://api.viettelpost.vn/api/setting/getOrderDetail?OrderNumber=";
 const InsertOrderUrl = "https://api.viettelpost.vn/api/tmdt/InsertOrder";
 const NotifyUrl = "https://io.viettelpost.vn/notification/v1.0/notification";
 // const MAX_FILE_SIZE = 1048576;
@@ -68,7 +73,148 @@ function convertToNumber(str) {
    return str ? Number(str) : 0;
 }
 
-//  SCHDEULE CHECK ORDER
+const baseExcelFolderPath = '../VTPCMS/public/xlsx/';
+let nextDay = new Date();
+let folderPathOfNextDay = baseExcelFolderPath + nextDay.getDate() + '-' + (nextDay.getMonth() + 1) + '-' + nextDay.getFullYear();
+let baseExcelFolderPathByDay = folderPathOfNextDay+ '/';
+
+// UPLOAD FILE EXEL
+var exelStorage = multer.diskStorage({
+   destination: function (req, file, cb) {
+       let nextDay = new Date();
+       let folderPathOfNextDay = baseExcelFolderPath + nextDay.getDate() + '-' + (nextDay.getMonth() + 1) + '-' + nextDay.getFullYear();
+      // console.log(folderPathOfNextDay);
+      cb(null, folderPathOfNextDay);
+   },
+   filename: function (req, file, cb) {
+       let file_name = Date.now() + '.' + file.originalname.split('.').slice(-1)[0];
+       if (req.headers.token) {
+           var decoded = jwt.decode(req.headers.token)
+           file_name = decoded.UserId + '-' + file_name
+       }
+      cb(null, file_name)
+   }
+});
+
+const exelUpoad = multer({ storage: exelStorage });
+var rule = new schedule.RecurrenceRule();
+rule.hour = 0;
+rule.minute = 0;
+rule.second = 0;
+//SCHEDULE FOR DAILY REPORT
+var j = schedule.scheduleJob(rule, async function(){
+    console.log('****************************BEGIN A NEW DAY****************************');
+    let nextDay = new Date();
+    let folderPathOfNextDay = baseExcelFolderPath + nextDay.getDate() + '-' + (nextDay.getMonth() + 1) + '-' + nextDay.getFullYear();
+    fs.mkdir(folderPathOfNextDay, function(err, success){
+        if (err) {
+            console.log(err);
+            console.log('mkdir error');
+            return;
+        }
+
+        baseExcelFolderPathByDay = folderPathOfNextDay + '/';
+        console.log('mkdir success');
+    })
+    let listTester = [ "1702545", "1486445", "1464987", "1709259", "1710799","1710795", "1712017", "1364830" ];
+    let listFile = await new Promise(function(resolve, reject) {
+        UploadExel.find({ uploadTime : { $gt: nextDay.getTime() - 86400000, $lt: nextDay.getTime() }, cusId: { $nin: listTester }}, { _id: 1, cusId: 1 }, function(err, dailyReports){
+            if (err) {
+                return reject('error')
+            }
+            return resolve(dailyReports);
+
+        })
+    });
+
+    if (typeof listFile == "string") {
+        console.log('error when get list file in a day');
+        return;
+    }
+
+    let listUserId = [];
+
+    let listId = listFile.map( function(item){
+        if (!listUserId.includes(item.cusId)) {
+            listUserId.push(item.cusId);
+        }
+        return item._id;
+    });
+
+    console.log(listId);
+
+    let listCountOrder = await new Promise(function(resolve, reject) {
+        UploadExel.aggregate([
+            { $match: { _id : { $in: listId } } },
+            { $unwind: "$content" },
+            {$group : { _id : "$content.status" , count: { $sum: 1 } }},
+            { $project: { "status": "$_id", count : 1 } }
+        ], function(err, response){
+            if (err) return reject('error')
+            return resolve(response);
+        })
+    });
+
+    if (typeof listCountOrder == 'string') {
+        console.log('error when count number order in a day');
+        return;
+    }
+
+
+    let total_create_success = 0, total_create_error = 0, total_error = 0, total_validate_error = 0, total_validate_success = 0, total_nlp_error = 0;
+    for (let i = 0; i < listCountOrder.length; i++) {
+        switch (listCountOrder[i].status) {
+            case "Completed":
+                total_create_success += listCountOrder[i].count;
+                break;
+            case "Error":
+                total_error += listCountOrder[i].count;
+                break;
+            case "NLPError":
+                total_nlp_error += listCountOrder[i].count;
+                break;
+            case "ValidateError":
+                total_validate_error += listCountOrder[i].count;
+                break;
+            case "ValidateSuccess":
+                total_validate_success += listCountOrder[i].count;
+                break;
+            case "CreateOrderError":
+                total_create_error += listCountOrder[i].count;
+                break;
+            default:
+        }
+    }
+
+    console.log(listCountOrder);
+    let dateReport = new Date(nextDay.getTime() - 86400000 + 1);
+    let insertObj = {
+        date_time: dateReport,
+        number_user: listUserId.length,
+        number_file: listFile.length,
+        list_success: {
+            create_success: total_create_success,
+            validate_success: total_validate_success
+        },
+        list_error: {
+            error: total_error,
+            NLP_error: total_nlp_error,
+            validate_error: total_validate_error,
+            create_error: total_create_error
+        }
+    }
+    DailyReportExcel.create(insertObj, function (err, response) {
+        if (err) {
+            console.log('insert daily report to database error');
+            return;
+        }
+        console.log('insert daily report to database success');
+    })
+
+});
+
+
+//  SCHEDULE CHECK ORDER
 var j = schedule.scheduleJob('*/10 * * * * *', function(){
    // console.log('Start check order');
    checkOrderCronJob();
@@ -220,23 +366,14 @@ function checkOrderCronJob() {
 function updateCheckInfoStatusMongo(list_check_info, id) {
    // console.log('line 219', list_check_info);
    const listPromise = list_check_info.map( function(order) {
-      // console.log(id);
-      // console.log(order.NLP.province.code);
-   // if (order.message.length) {
-      // console.log(order.index);
-      // let optionsInsert = {};
-      // console.log(order.message.length);
-      // console.log(order.message[0]);
-      // if (order.message.length > 1) {
-      //    optionsInsert = { $addToSet: { "content.$.message":  { $each: order.message } }, $set: { "content.$.status": "Error" } };
-      // } else {
-      //    optionsInsert = { $addToSet: { "content.$.message":  order.message[0] }, $set: { "content.$.status": "Error" } };
-      // }
       return new Promise( (resolve, reject) => {
-
+            // console.log(order.index);
             UploadExel.findOneAndUpdate(
-               { "_id": id, "content.index" : order.index  },
-               { $set: { "content.$.status": "Error" } }
+               { "_id": id, "content.index": order.index },
+               {
+                   "$set": { "content.$.status": "Error" },
+                   "$push": { "content.$.message":  { $each : order.message } }
+                }
             ).exec()
             .then( (checkInfoRes) => {
                // console.log("checkInfoRes ", checkInfoRes);
@@ -252,7 +389,7 @@ function updateCheckInfoStatusMongo(list_check_info, id) {
                }
             })
             .catch( err => {
-               // console.log(err);
+               console.log(err);
                console.log('error in updateCheckInfoStatusMongo');
                reject('error')
             });
@@ -267,10 +404,6 @@ function updateCheckInfoStatusMongo(list_check_info, id) {
 function updateSetInvalidMessageStatusMongo(list_check_info, id) {
    // console.log('line 219', list_check_info);
    const listPromise = list_check_info.map( function(order) {
-      // console.log(id);
-      // console.log(order.NLP.province.code);
-   // if (order.message.length) {
-      // console.log(order.index);
       let optionsInsert = {};
       // console.log(order.message.length);
       // console.log(order.message[0]);
@@ -441,7 +574,7 @@ function updateStatusValidateSuccess(listValidateSuccess, fileId) {
             fee_other +=  Number(item.price[i].PRICE);
          }
          new Promise( (resolve, reject) => {
-            UploadExel.update(
+            UploadExel.findOneAndUpdate(
                { "_id": fileId, "content.index" : item.index },
                { $set: {
                   "content.$.status" : "ValidateSuccess",
@@ -674,33 +807,13 @@ async function checkListAllOrder(list, token) {
       // console.log(listNLPSuccess);
       // END OF CHECK NLP
 
-      // START CHECK PRICE
-      let listIndexValidateError = [], listIndexValidateSuccess = [], listValidateSuccess = [];
-      let  responseGetPrice =  await getPriceMultipleOrder(listNLPSuccess, inventory);
-
-      for (let i = 0; i < responseGetPrice.length; i++) {
-         if (responseGetPrice[i].error) {
-            // if order is not validated
-            listIndexValidateError.push(listNLPSuccess[i].index);
-         } else {
-            // if order validate
-            listIndexValidateSuccess.push(listNLPSuccess[i].index);
-            listValidateSuccess.push({
-               ...listNLPSuccess[i],
-               "price": responseGetPrice[i]
-            });
-         }
-      }
-
-      console.log('List index ValidateError', listIndexValidateError);
-
-      let listInfoValid = [], listIndexInfoInvalid = [];
-      let listCheckInfoResponse = [];
-
       // check info valid or missing  of (validate error + validate success)
+
+        let listInfoValid = [], listIndexInfoInvalid = [];
+        let listCheckInfoResponse = [];
       for (let i = 0; i < listNLPSuccess.length; i++) {
          let order_item = listNLPSuccess[i].order;
-         console.log('index = ', listNLPSuccess[i].index);
+
          let message = [];
          for (let key in order_item) {
             if (list_status_required.includes(key) && !order_item[key]) {
@@ -713,6 +826,16 @@ async function checkListAllOrder(list, token) {
          // console.log(message);
          // console.log("message.length" , message.length);
          if (message.length) {
+
+             // if (listIndexValidateSuccess.includes(listNLPSuccess[i].index)){
+             //     let indexOf = listIndexValidateSuccess.indexOf(listNLPSuccess[i].index);
+             //    listIndexValidateSuccess.splice(indexOf, 1);
+             // }
+             // if (listIndexValidateError.includes(listNLPSuccess[i].index)){
+             //     let indexOf = listIndexValidateError.indexOf(listNLPSuccess[i].index);
+             //    listIndexValidateError.splice(indexOf, 1);
+             // }
+
             listIndexInfoInvalid.push(listNLPSuccess[i].index);
             listCheckInfoResponse.push({
                index: listNLPSuccess[i].index,
@@ -723,6 +846,32 @@ async function checkListAllOrder(list, token) {
 
 
       }
+
+      // START CHECK PRICE
+      let listIndexValidateError = [], listIndexValidateSuccess = [], listValidateSuccess = [];
+      let  responseGetPrice =  await getPriceMultipleOrder(listNLPSuccess, inventory);
+
+      for (let i = 0; i < responseGetPrice.length; i++) {
+         if (responseGetPrice[i].error) {
+            // if order is not validated
+            if (!listIndexInfoInvalid.includes(listNLPSuccess[i].index)) {
+                listIndexValidateError.push(listNLPSuccess[i].index);
+            }
+
+         } else {
+            // if order validate
+            if (!listIndexInfoInvalid.includes(listNLPSuccess[i].index)) {
+                listIndexValidateSuccess.push(listNLPSuccess[i].index);
+                listValidateSuccess.push({
+                   ...listNLPSuccess[i],
+                   "price": responseGetPrice[i]
+                });
+            }
+
+         }
+      }
+
+
 
       // if validate sucess -> check info valid or missing
       // for (let i = 0; i < listValidateSuccess.length; i++) {
@@ -805,26 +954,30 @@ async function checkListAllOrder(list, token) {
       }
 
       console.log("listIndexInfoInvalid ", listIndexInfoInvalid);
+
+      console.log('List index ValidateError', listIndexValidateError);
+
+      console.log('List index ValidateSuccess', listIndexValidateSuccess);
       // console.log("listCheckInfoResponse ", listCheckInfoResponse);
       let updateStatusCheckInfoResponse = await updateCheckInfoStatusMongo(listCheckInfoResponse, list._id);
 
-      // console.log("updateStatusCheckInfoResponse ", updateStatusCheckInfoResponse);
+      console.log("updateStatusCheckInfoResponse ", updateStatusCheckInfoResponse);
       if (updateStatusCheckInfoResponse.includes('error')) {
          // call noti API
          console.log('Update status ERROR on mongodb error');
          return Promise.reject('exit');
       }
 
-      let updateInvalidMessageRes = await updateSetInvalidMessageStatusMongo(listCheckInfoResponse, list._id);
+      // let updateInvalidMessageRes = await updateSetInvalidMessageStatusMongo(listCheckInfoResponse, list._id);
+      //
+      // // console.log("updateInvalidMessageRes ", updateInvalidMessageRes);
+      // if (updateInvalidMessageRes.includes('error')) {
+      //    // call noti API
+      //    console.log('Update status of order missing info on mongodb error');
+      //    return Promise.reject('exit');
+      // }
 
-      // console.log("updateInvalidMessageRes ", updateInvalidMessageRes);
-      if (updateInvalidMessageRes.includes('error')) {
-         // call noti API
-         console.log('Update status of order missing info on mongodb error');
-         return Promise.reject('exit');
-      }
-
-      console.log('Total error = ', listIndexNLPError.length + listIndexInfoInvalid.length);
+      console.log('Total error(missing info or info invalid) = ', listIndexInfoInvalid.length);
 
       // update status for insert order error on mongodb
       // let updateStatusInsertErrorRes = await updateStatusInsertError(listIndexInsertError, list._id);
@@ -1066,58 +1219,65 @@ async function insertMultipleOrder(list_item, inventory, token) {
 
 // END OF TEST
 
-// UPLOAD FILE EXEL
-var exelStorage = multer.diskStorage({
-   destination: function (req, file, cb) {
-      // console.log(file);
-      cb(null, '../VTPCMS/public/xlsx')
-   },
-   filename: function (req, file, cb) {
-      // console.log(file);
-      cb(null, Date.now() + '.' + file.originalname.split('.').slice(-1)[0])
-   }
-});
 
-const exelUpoad = multer({ storage: exelStorage });
 
 router.post('/upload', exelUpoad.single('file'), function (req, res) {
-   // console.log(JSON.parse(inventory));
-   if (req.headers.token == undefined) {
-      return res.status(400).send({ status: 400, error: true, message: "No token provided", data: null });
-   };
-   if (req.body.inventory == undefined) {
-      return res.status(400).send({ status: 400, error: true, message: "Inventory is undefined", data: null });
-   }
-   let { inventory } = req.body;
-   let standardHeader = [
-      'DIEN_THOAI_KHNHAN',
-      'TEN_NGUOI_NHAN',
-      'DIACHI_KHNHAN',
-      'TINH_DEN',
-      'QUAN_DEN',
-      'NOI_DUNG_HANG_HOA',
-      'TRONG_LUONG_GRAM',
-      'TRI_GIA_HANG',
-      'NGUOI_NHAN_TRA_CUOC',
-      'TIEN_THU_HO',
-      'DICH_VU',
-      'DICH_VU_KHAC',
-      'XEM_HANG',
-      'YEU_CAU_KHI_GIAO',
-      'MA_DON_HANG'
-   ];
+   // console.log(req.body);
+   console.log(req.file);
 
-   inventory = JSON.parse(inventory);
    if(req.file) {
+        if (req.headers.token == undefined) {
+            //delete file
+            fs.unlink(baseExcelFolderPathByDay + req.file.filename, (err) => {
+                console.log('successfully deleted ' + baseExcelFolderPathByDay + req.file.filename);
+            });
+            return res.status(400).send({ status: 400, error: true, message: "No token provided", data: null });
+
+        };
+        if (req.body.inventory == undefined) {
+            // delete file
+            fs.unlink(baseExcelFolderPathByDay + req.file.filename, (err) => {
+               console.log('successfully deleted ' + baseExcelFolderPathByDay + req.file.filename);
+            });
+            return res.status(400).send({ status: 400, error: true, message: "inventory is undefined", data: null });
+        }
+
+        let { inventory } = req.body;
+        inventory = JSON.parse(inventory);
+        let standardHeader = [
+            'DIEN_THOAI_KHNHAN',
+            'TEN_NGUOI_NHAN',
+            'DIACHI_KHNHAN',
+            'TINH_DEN',
+            'QUAN_DEN',
+            'NOI_DUNG_HANG_HOA',
+            'TRONG_LUONG_GRAM',
+            'TRI_GIA_HANG',
+            'NGUOI_NHAN_TRA_CUOC',
+            'TIEN_THU_HO',
+            'DICH_VU',
+            'DICH_VU_KHAC',
+            'XEM_HANG',
+            'YEU_CAU_KHI_GIAO',
+            'MA_DON_HANG'
+        ];
       // console.log(req.file);
-      if (req.file.size > MAX_FILE_SIZE) {
-         return res.status(200).send({ status:200, message: "Dung lượng file không được lớn hơn 1MB", error: true });
-      }
+        if (req.file.size > MAX_FILE_SIZE) {
+            // delêt file when file size ís large
+            fs.unlink(baseExcelFolderPathByDay + req.file.filename, (err) => {
+                console.log('successfully deleted ' + baseExcelFolderPathByDay + req.file.filename);
+            });
+            return res.status(200).send({ status:200, message: "Dung lượng file không được lớn hơn 1MB", error: true });
+        }
+
+
+        let nextDay = new Date();
+        let concatPath = nextDay.getDate() + '-' + (nextDay.getMonth() + 1) + '-' + nextDay.getFullYear() + '/';
 
       // Parse a buffer
-      const workSheetsFromBuffer = xlsx.parse(path.join(__root, 'public/xlsx/' + req.file.filename));
+      const workSheetsFromBuffer = xlsx.parse(path.join(__root, 'public/xlsx/' + concatPath + req.file.filename));
       // Parse a file
-      const workSheetsFromFile = xlsx.parse(path.join(__root, 'public/xlsx/' + req.file.filename));
+      const workSheetsFromFile = xlsx.parse(path.join(__root, 'public/xlsx/' + concatPath + req.file.filename));
 
       exelObject = [];
 
@@ -1156,6 +1316,7 @@ router.post('/upload', exelUpoad.single('file'), function (req, res) {
                   }
 
                }
+               row_data = {  'ORDER_NUMBER' : '', ...row_data };
 
                list_row_data[index] = {
                   "index": j,
@@ -1206,13 +1367,17 @@ router.post('/upload', exelUpoad.single('file'), function (req, res) {
          })
       }
       else {
-         // if header of file upload not match standard header
-         return res.status(200).send({ status:200, message: "File thiếu một trong các cột sau DIEN_THOAI_KHNHAN,TEN_NGUOI_NHAN, "
-            + "DIACHI_KHNHAN, TINH_DEN, QUAN_DEN, NOI_DUNG_HANG_HOA, TRONG_LUONG_GRAM, TRI_GIA_HANG, "
-            + "NGUOI_NHAN_TRA_CUOC, TIEN_THU_HO, DICH_VU, DICH_VU_KHAC, XEM_HANG, YEU_CAU_KHI_GIAO, MA_DON_HANG", error: true });
+           // if header of file upload not match standard header -> delete file
+            fs.unlink(baseExcelFolderPathByDay + req.file.filename, (err) => {
+              console.log('successfully deleted ' + baseExcelFolderPathByDay + req.file.filename);
+              return res.status(200).send({ status:200, message: "File thiếu một trong các cột sau DIEN_THOAI_KHNHAN,TEN_NGUOI_NHAN, "
+                 + "DIACHI_KHNHAN, TINH_DEN, QUAN_DEN, NOI_DUNG_HANG_HOA, TRONG_LUONG_GRAM, TRI_GIA_HANG, "
+                 + "NGUOI_NHAN_TRA_CUOC, TIEN_THU_HO, DICH_VU, DICH_VU_KHAC, XEM_HANG, YEU_CAU_KHI_GIAO, MA_DON_HANG", error: true });
+            });
+
       }
    } else {
-      res.status(400).send({ status:400, message: "File is not choosen", error: true });
+      return res.status(400).send({ status:400, message: "File is not choosen", error: true });
    }
 })
 
@@ -1236,7 +1401,7 @@ router.post('/export', function(req, res) {
    var exelData = [];
 
    UploadExel.findOne({ "_id": file_id }).exec( function(err, data) {
-      console.log(data);
+      // console.log(data);
       if(err) return res.status(500).send({ status: 500, error: true, message: "Can not connect to server or query error", data: null });
       if(!data) return res.status(200).send({ status: 200, error: true, message: `file_id ${file_id} not exists`, data: null });
 
@@ -1274,19 +1439,38 @@ router.post('/export', function(req, res) {
             return res.status(200).send({ status: 200, error: true, message: `write file error, try it again`, data: null });
          }
          // else return res.render('index', {link: `/xlsx/${filename}`, name: filename});
-         else return res.status(200).send({
-            status: 200,
-            error: false,
-            message: "success",
-            download_url: `/xlsx/${filename}`,
-            data: { download_url: `/xlsx/${filename}` }
-         });
+         else {
+            FileManagement.create({
+                create_time: new Date(),
+                path: `/xlsx/${filename}`
+            }, function (err, cb) {
+
+                if (err) {
+                    return res.status(500).send({ status: 500, error: true, message: "Can not connect to server", data: null });
+                }
+                let buff = new Buffer(`/xlsx/${filename}`);
+                return res.status(200).send({
+                    status: 200,
+                    error: false,
+                    message: "success",
+                    download_url: '/download/' + buff.toString('base64'),
+                    data: { download_url: '/download/' + buff.toString('base64') }
+                });
+            })
+         }
          // return res.redirect(`/xlsx/${filename}`);
          // else return res.render('index');
       });
       // res.send(buffer);
    })
 })
+
+// router.get('/download/:code', function(req, res) {
+//     console.log(req.params.code);
+//     let buff = new Buffer(req.params.code, 'base64');
+//     console.log(buff.toString('ascii'));
+//     res.redirect(buff.toString('ascii'));
+// });
 
 router.post('/get_all', async function (req, res) {
    // req.body = { cus_id: '111111111111111111' }
@@ -1646,7 +1830,7 @@ router.post('/submit_order', async function (req, res) {
          // if create order success
          UploadExel.findOneAndUpdate(
             { _id: file_id, "content.index": index },
-            {  $set: { "content.$.status" : "Completed","content.$.order.MA_DON_HANG" : orderNumber }},
+            {  $set: { "content.$.status" : "Completed","content.$.order.ORDER_NUMBER" : orderNumber }},
             function (response) {
                if (response) {
                   return res.status(500).send({status: 500, message: 'update status on database error', error: true, data: null });
@@ -1818,7 +2002,7 @@ router.post('/submit_multi_order', async function (req, res) {
                // if insert order success
                UploadExel.findOneAndUpdate(
                   { _id: file_id, "content.index": response.index },
-                  {  $set: { "content.$.status" : "Completed", "content.$.order.MA_DON_HANG" : response.order_number }}
+                  {  $set: { "content.$.status" : "Completed", "content.$.order.ORDER_NUMBER" : response.order_number }}
                ).exec()
                .then( resp => {
                   if (resp) return resolve('success');
@@ -1999,7 +2183,7 @@ router.post('/submit_all_order', async function (req, res) {
                // if insert order success
                UploadExel.findOneAndUpdate(
                   { _id: file_id, "content.index": response.index },
-                  {  $set: { "content.$.status" : "Completed", "content.$.order.MA_DON_HANG" : response.order_number }}
+                  {  $set: { "content.$.status" : "Completed", "content.$.order.ORDER_NUMBER" : response.order_number }}
                ).exec()
                .then( resp => {
                   if (resp) {
@@ -2126,9 +2310,21 @@ router.post('/get_detail', function (req, res) {
                   numberOrderMatchStatus += 1;
                   if (minIndex < numberOrderMatchStatus && numberOrderMatchStatus <= maxIndex ) {
                      list_receiver_address.push(item.order.DIACHI_KHNHAN);
+                     let order_payment = 0;
+                     if (item.order.NGUOI_NHAN_TRA_CUOC.startsWith('1')) {
+                        if (item.order.TIEN_THU_HO == 0) {
+                           order_payment = 4;
+                        } else {
+                           order_payment = 2;
+                        }
+                    } else if (item.order.TIEN_THU_HO == 0) {
+                        order_payment = 1;
+                     } else {
+                        order_payment = 3;
+                     }
                      let order_detail = {
-                        "ORDER_NUMBER": item.order.MA_DON_HANG ? item.order.MA_DON_HANG : "",
-                        "ORDER_REFERENCE": "",
+                        "ORDER_NUMBER": item.order.ORDER_NUMBER,
+                        "ORDER_REFERENCE": item.order.MA_DON_HANG ? item.order.MA_DON_HANG : "",
                         "GROUPADDRESS_ID": inventory.GROUPADDRESS_ID,
                         "CUS_ID": inventory.CUS_ID,
                         "PARTNER": 0,
@@ -2158,7 +2354,7 @@ router.post('/get_detail', function (req, res) {
                         "PRODUCT_PRICE": convertToNumber(item.order.TRI_GIA_HANG),
                         "PRODUCT_WEIGHT": convertToNumber(item.order.TRONG_LUONG_GRAM),
                         "PRODUCT_TYPE": "HH",
-                        // "ORDER_PAYMENT": item.order.NGUOI_NHAN_TRA_CUOC.split('-')[0].trim(),
+                        "ORDER_PAYMENT": order_payment,
                         "ORDER_SERVICE": item.order.DICH_VU.split('-')[0].trim(),
                         "ORDER_SERVICE_ADD": item.order.DICH_VU_KHAC ? item.order.DICH_VU_KHAC : "",
                         "ORDER_VOUCHER": 0,
@@ -2310,7 +2506,7 @@ router.post('/history', function(req, res) {
    }
 
    UploadExel.find({ cusId: cus_id }).sort({uploadTime: -1}).exec(function(err, history) {
-      if (err) res.status(500).send({status: 500, message: 'Can not connect to server', error: true, data: null });
+      if (err) return res.status(500).send({status: 500, message: 'Can not connect to server', error: true, data: null });
       if (!history) return res.status(200).send({status: 200, message: 'File not found', error: true, data: null });
       // res.send({ data: history })
       let list_file = [];
@@ -2377,6 +2573,259 @@ router.post('/history', function(req, res) {
       res.status(200).send({status: 200, message: 'success', error: false, data: list_file});
    })
 });
+
+router.post('/multi-order-export', async function(req, res) {
+    try {
+        console.log(req.headers);
+        const { list_order_number } = req.body;
+
+        if (!req.headers.token) {
+            return res.status(400).send({ status: 400, message: 'no token provided', error: true, data: null });
+        }
+
+        if(list_order_number == undefined){
+           return res.status(400).send({status: 400, message: 'list_order_number is undefined', error: true, data: null });
+        }
+
+        if(list_order_number.length == 0 || list_order_number.length > 500){
+           return res.status(400).send({status: 400, message: 'list_order_number is empty or over 500 order', error: true, data: null });
+        }
+
+        let list = [];
+        let prevDate = new Date();
+        let listOrderDetail = [];
+
+        // for (let i = 0; i < 100; i++) {
+        //     list.push(list_order_number[Math.floor(Math.random()*4)])
+        // }
+        if (list_order_number.length == 1) {
+            listOrderDetail[0] = await new Promise((resolve, reject) => setTimeout( () => {
+                axios({
+                    method: 'get',
+                    url: GetOrderDetailUrl + list_order_number[0],
+                    headers: {
+                        "token": req.headers.token
+                    }
+                }).then( response => {
+                    // console.log('success');
+                    // console.log('response : ', response.data);
+                    if (response.data[0]) {
+                        return resolve(response.data[0]);
+                    }
+
+                    return resolve('error');
+                }).catch( err => {
+                    console.log(err);
+                    return reject('error');
+                })
+            }), 50);
+        } else {
+            let listPromises = list_order_number.map( function(orderNumber) {
+                return new Promise((resolve, reject) => setTimeout( () => {
+                    axios({
+                        method: 'get',
+                        url: GetOrderDetailUrl + orderNumber,
+                        headers: {
+                            "token": req.headers.token
+                        }
+                    }).then( response => {
+                        // console.log('success');
+                        // console.log('response : ', response.data);
+                        if (response.data[0]) {
+                            return resolve(response.data[0]);
+                        }
+
+                        return resolve('error');
+                    }).catch( err => {
+                        console.log(err);
+                        return reject('error');
+                    })
+                }), 50);
+            })
+
+            listOrderDetail = await Promise.all(listPromises);
+        }
+
+        // console.log(listOrderDetail[1].SENDER_ADDRESS);
+
+        if (listOrderDetail.includes('error')) {
+            return res.status(500).send({ status: 500, error: true, message: 'can not get order detail on server', data: null })
+        }
+
+        let header = [
+            'DIEN_THOAI_KHNHAN',
+            'TEN_NGUOI_NHAN',
+            'DIACHI_KHNHAN',
+            'TINH_DEN',
+            'QUAN_DEN',
+            'NOI_DUNG_HANG_HOA',
+            'TRONG_LUONG_GRAM',
+            'TRI_GIA_HANG',
+            'NGUOI_NHAN_TRA_CUOC',
+            'TIEN_THU_HO',
+            'DICH_VU',
+            'DICH_VU_KHAC',
+            'XEM_HANG',
+            'YEU_CAU_KHI_GIAO',
+            'MA_DON_HANG'
+        ];
+
+        let excelDataExport = [];
+        excelDataExport.push(header);
+        for (let i = 0; i < listOrderDetail.length; i++ ) {
+            let order = listOrderDetail[i];
+            // if (order.NGUOI_NHAN_TRA_CUOC.startsWith('1')) {
+            //    if (order.TIEN_THU_HO == 0) {
+            //       order_payment = 4;
+            //    } else {
+            //       order_payment = 2;
+            //    }
+            // } else if (order.TIEN_THU_HO == 0) {
+            //    order_payment = 1;
+            // } else {
+            //    order_payment = 3;
+            // }
+            let NGUOI_NHAN_TRA_CUOC = '1-Có';
+            if (order.ORDER_PAYMENT == 1 || order.ORDER_PAYMENT == 3) {
+                NGUOI_NHAN_TRA_CUOC = '2-Không'
+            }
+            // console.log(order.SENDER_ADDRESS);
+           let rowExel = [
+               order.RECEIVER_PHONE,
+               order.RECEIVER_FULLNAME,
+               order.RECEIVER_ADDRESS,
+               "",
+               "",
+               order.PRODUCT_NAME,
+               order.PRODUCT_WEIGHT,
+               order.PRODUCT_PRICE,
+               NGUOI_NHAN_TRA_CUOC,
+               order.MONEY_COLLECTION,
+               order.ORDER_SERVICE,
+               order.ORDER_SERVICE_ADD,
+               order.ORDER_NOTE,
+               order.ORDER_NOTE,
+               order.ORDER_REFERENCE
+           ];
+
+           // add all row to excel file
+           excelDataExport.push(rowExel);
+        }
+
+        let buffer = xlsx.build([{name: "Multi order export", data: excelDataExport }]); // Returns a buffer
+        // res.attachment('users.xlsx');
+        let date = new Date();
+        console.log('time to get multiple request: ', date.getTime() - prevDate.getTime() );
+        let name = 'multi-order-export-' + date.getTime();
+        let filename = `${name}.xlsx`;
+        fs.writeFile(`public/xlsx/multiple-order-export/${filename}`, buffer, function (err) {
+           if (err) {
+              //if write file error
+              return res.status(200).send({ status: 200, error: true, message: `write file error, try it again`, data: null });
+           }
+
+           else {
+
+               let filePath = `/xlsx/multiple-order-export/${filename}`;
+                FileManagement.create({
+                    create_time: new Date(),
+                    path: filePath
+                }, function (err, cb) {
+                    if(err) return res.status(500).send({ status: 500, error: true, message: "Can not connect to server", data: null });
+                    let buff = new Buffer(filePath);
+                    return res.status(200).send({
+                        status: 200,
+                        error: false,
+                        message: "success",
+                        download_url: '/download/' + buff.toString('base64')
+                    });
+                })
+
+            }
+        });
+    } catch (e) {
+        console.log('error :', e)
+
+    } finally {
+
+    }
+
+})
+
+router.post('/daily-report', function(req, res) {
+    let { from_date, to_date } = req.body;
+
+    if(from_date == undefined){
+       return res.status(400).send({status: 400, message: 'from_date is undefined', error: true, data: null });
+    }
+
+    if(to_date == undefined){
+       return res.status(400).send({status: 400, message: 'to_date is undefined', error: true, data: null });
+    }
+
+    let start_date =  new Date(from_date);
+    let end_date = new Date(to_date);
+    DailyReportExcel.find({ date_time : { $gte: start_date.getTime(), $lte: end_date.getTime()  }  }, function(err, reports) {
+        if (err) {
+            return res.status(500).send({status: 500, message: 'Can not connect to server', error: true, data: null });
+        }
+
+        let exelReport = [];
+        let header = [ "Ngày", "Số người dùng", "Số file tải lên", "Số đơn thành công", "Số đơn tính giá thành công",
+        "Số đơn thiếu thông tin",  "Số đơn lỗi NLP", "Số đơn lỗi tính giá", "Số đơn lỗi tạo đơn"];
+        // push column name
+        exelReport.push(header);
+
+        // console.log(header);
+        // Object.keys(header).forEach( k => {
+        //    console.log(header[k]);
+        // })
+
+
+        for (let i = 0; i < reports.length; i++ ) {
+            let daily = new Date(reports[i].date_time);
+           let rowExel = [
+               daily.getDate() + '/' + (daily.getMonth() + 1) + '/' + daily.getFullYear(),
+               reports[i].number_user,
+               reports[i].number_file,
+               reports[i].list_success.create_success,
+               reports[i].list_success.validate_success,
+               reports[i].list_error.error,
+               reports[i].list_error.NLP_error,
+               reports[i].list_error.validate_error,
+               reports[i].list_error.create_error
+           ];
+
+           // add all row to excel file
+           exelReport.push(rowExel);
+        }
+
+        let buffer = xlsx.build([{name: "Daily Report", data: exelReport }]); // Returns a buffer
+        // res.attachment('users.xlsx');
+        let date = new Date();
+        let name = 'daily-report-' + date.getTime();
+        let filename = `${name}.xlsx`;
+        fs.writeFile(`public/xlsx/report/${filename}`, buffer, function (err) {
+           if (err) {
+              //if write file error
+              return res.status(200).send({ status: 200, error: true, message: `write file error, try it again`, data: null });
+           }
+
+           else {
+               let filePath = `/xlsx/report/${filename}`;
+               let buff = new Buffer(filePath);
+                return res.status(200).send({
+                    status: 200,
+                    error: false,
+                    message: "success",
+                    download_url: '/download/' + buff.toString('base64'),
+                    data: { download_url: '/download/' + buff.toString('base64')}
+                });
+            }
+        });
+        // res.status(200).send({status: 200, message: 'success', error: false, data: reports });
+    })
+})
 
 
 async function checkOrderToInsert(array) {
@@ -2665,26 +3114,30 @@ function checkOrderItem(item, len, inventory, list_order_id, token) {
    })
 }
 
+router.get('/ronalkean', function(req, res){
+    res.redirect('/xlsx/multiple-order-export/multi-order-export-1534603722078.xlsx');
+})
+
 router.get('/info', async function(req, res) {
    let list_cus_id = [
-    "1702545",
-    "1446107",
-    "1486445",
-    "722",
-    "1464987",
-    "1706454",
-    "1709259",
-    "1709243",
-    "1710799",
-    "1364830",
-    "1445800",
-    "1710795",
-    "1712017",
-    "1552463",
-    "1448374",
-    "1443214",
-    "1510563"
-];
+        "1702545",
+        "1446107",
+        "1486445",
+        "722",
+        "1464987",
+        "1706454",
+        "1709259",
+        "1709243",
+        "1710799",
+        "1364830",
+        "1445800",
+        "1710795",
+        "1712017",
+        "1552463",
+        "1448374",
+        "1443214",
+        "1510563"
+    ];
    let promises = list_cus_id.map( function(cus_id){
       console.log(cus_id);
       return new Promise((resolve, reject) => {
@@ -2700,5 +3153,7 @@ router.get('/info', async function(req, res) {
 
    res.send({ data: list });
 
-})
+});
+
+
 module.exports = router;

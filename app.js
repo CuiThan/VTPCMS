@@ -9,10 +9,23 @@ app.get('/api', function (req, res) {
   res.status(200).send('API works.................');
 });
 
+app.get('/download/:code', function(req, res) {
+    console.log(req.params.code);
+    let buff = new Buffer(req.params.code, 'base64');
+    console.log(buff.toString('ascii'));
+    res.redirect(buff.toString('ascii'));
+});
+
 app.use(express.static(path.join(__root, 'public')));
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(cors());
+
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
 app.get('/', function( req, res){
    res.redirect('/xlsx/employee.xlsx')

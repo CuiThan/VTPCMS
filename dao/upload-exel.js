@@ -1,10 +1,5 @@
 var mongoose = require('mongoose');
 
-// interface headerSchema {
-//    A: string;
-//    B: string;
-// };
-
 var UploadExelSchema = new mongoose.Schema({
    status: String,
    fileName: String,
