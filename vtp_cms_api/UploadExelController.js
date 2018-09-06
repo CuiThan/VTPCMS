@@ -18,7 +18,8 @@ router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
 
 // const NLP_URL  = "http://address-address.oc.viettelpost.vn/parser";
-const NLP_URL  = "http://35.240.247.10/parser";
+// const NLP_URL  = "http://35.240.247.10/parser";
+const NLP_URL  = "http://address-address.oc.viettelpost.vn/parser";
 const GetOrderPriceUrl = "https://api.viettelpost.vn/api/tmdt/getPrice";
 const GetOrderDetailUrl = "https://api.viettelpost.vn/api/setting/getOrderDetail?OrderNumber=";
 const InsertOrderUrl = "https://api.viettelpost.vn/api/tmdt/InsertOrder";
@@ -1833,9 +1834,9 @@ router.post('/submit_order', async function (req, res) {
             {  $set: { "content.$.status" : "Completed","content.$.order.ORDER_NUMBER" : orderNumber }},
             function (response) {
                if (response) {
-                  return res.status(500).send({status: 500, message: 'update status on database error', error: true, data: null });
+                  return res.status(500).send({status: 500, message: 'Cập nhật trạng thái đơn không thành công', error: true, data: null });
                }
-               return res.status(200).send({status: 200, message: 'create order success', error: false, data: null });
+               return res.status(200).send({status: 200, message: 'Tạo đơn thành công', error: false, data: null });
             }
          )
       }
@@ -1846,15 +1847,15 @@ router.post('/submit_order', async function (req, res) {
             {  $set: { "content.$.status" : "CreateOrderError" }},
             function (response) {
                if (response) {
-                  return res.status(500).send({status: 500, message: 'update status on database error', error: true, data: null });
+                  return res.status(500).send({status: 500, message: 'Cập nhật trạng thái đơn không thành công', error: true, data: null });
                }
-               return res.status(200).send({status: 200, message: 'create order error', error: true, data: null });
+               return res.status(200).send({status: 200, message: 'Tạo đơn không thành công', error: true, data: null });
             }
          )
       }
    } catch (e) {
       console.log(e);
-      return res.status(500).send({status: 500, message: 'has error when submit order, please try do it', error: true, data: null });
+      return res.status(500).send({status: 500, message: 'Đã có lỗi xảy ra khi tạo đơn, vui lòng thử lại', error: true, data: null });
    } finally {
 
    }
@@ -2029,7 +2030,7 @@ router.post('/submit_multi_order', async function (req, res) {
 
    } catch (e) {
       console.log(e);
-      return res.status(500).send({status: 500, message: 'has error when submit order, please try do it', error: true, data: null });
+      return res.status(500).send({status: 500, message: 'Đã có lỗi xảy ra khi tạo đơn, vui lòng thử lại', error: true, data: null });
    } finally {
 
    }
@@ -2205,7 +2206,7 @@ router.post('/submit_all_order', async function (req, res) {
 
 
       if (updateStatusInsertOrderResponse.includes('error')) {
-         return res.status(500).send({status: 500, message: 'update order status to database erro, try it again', error: true, data: createOrderResponse });
+         return res.status(500).send({status: 500, message: 'Đã có lỗi xảy ra khi tạo đơn, vui lòng thử lại', error: true, data: createOrderResponse });
       }
 
       return res.status(200).send({
@@ -2223,7 +2224,7 @@ router.post('/submit_all_order', async function (req, res) {
 
    } catch (e) {
       console.log(e);
-      return res.status(500).send({status: 500, message: 'has error when submit order, please try do it', error: true, data: null });
+      return res.status(500).send({status: 500, message: 'Đã có lỗi xảy ra khi tạo đơn, vui lòng thử lại', error: true, data: null });
    } finally {
       //finish
    }

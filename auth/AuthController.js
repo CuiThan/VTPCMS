@@ -43,9 +43,9 @@ router.get('/generate', function( req, res){
     //             // res.status(200).send({ auth: true, token: token });
     //         });
     // }
-       var hashedPassword = bcrypt.hashSync("123qwe", 8);
+       var hashedPassword = bcrypt.hashSync("truyenthong123!@#", 8);
     ClientApp.create({
-      appId : "test",
+      appId : "daotaotruyenthong",
       secretKey : hashedPassword
     },
     function (err, clientApp) {
