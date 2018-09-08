@@ -75,6 +75,17 @@ module.exports = {
       "TRONG_LUONG_GRAM",
       "DICH_VU"
    ],
+   list_status_web_require: [
+      "DIACHI_KHNHAN",
+      "DIEN_THOAI_KHNHAN",
+      "TEN_NGUOI_NHAN",
+      "TINH_DEN",
+      "QUAN_DEN",
+      "NOI_DUNG_HANG_HOA",
+      "NGUOI_NHAN_TRA_CUOC",
+      "TRONG_LUONG_GRAM",
+      "DICH_VU"
+   ],
 
    formatMessageError: function(str) {
       return "Thiếu " + str;

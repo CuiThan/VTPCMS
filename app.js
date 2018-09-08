@@ -65,6 +65,9 @@ app.use('/api/note', NoteController);
 var UploadExelController  = require(__root + 'vtp_cms_api/UploadExelController');
 app.use('/api/excel', UploadExelController);
 
+var ExcelWebController  = require(__root + 'vtp_cms_api/ExcelWebController');
+app.use('/api/web-excel', ExcelWebController);
+
 var CMSAPI = require(__root + 'vtp_cms_api/WebController');
 app.use('/api/cms', CMSAPI);
 

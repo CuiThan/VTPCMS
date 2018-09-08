@@ -1510,11 +1510,15 @@ router.post('/edit_order_item', async function (req, res) {
       }
 
       if (!verify.IsNotEmptyOrUndefined(order.RECEIVER_PHONE) || !verify.IsNotEmptyOrUndefined(order.RECEIVER_ADDRESS) || !verify.IsNotNegativeOrUndefined(order.PRODUCT_WEIGHT)) {
-         return res.status(400).send({status: 400, message: 'Điệnt thoại, địa chỉ và trọng lượng hàng bị thiếu hoặc không hợp lệ', error: true, data: null });
+         return res.status(400).send({status: 400, message: 'Điện thoại, địa chỉ và trọng lượng hàng bị thiếu hoặc không hợp lệ', error: true, data: null });
       }
 
       if (!verify.IsNotNegativeOrUndefined(order.RECEIVER_PROVINCE) || !verify.IsNotNegativeOrUndefined(order.RECEIVER_DISTRICT)) {
          return res.status(400).send({status: 400, message: 'Địa chỉ của người nhận chưa đầy đủ', error: true, data: null });
+      }
+
+      if (!verify.IsNotNegativeOrUndefined(order.MONEY_COLLECTION)) {
+         return res.status(400).send({status: 400, message: 'Tiền thu hộ không hợp lệ', error: true, data: null });
       }
 
 
@@ -1531,6 +1535,7 @@ router.post('/edit_order_item', async function (req, res) {
                "content.$.order.DIACHI_KHNHAN": order.RECEIVER_ADDRESS,
                "content.$.order.DIEN_THOAI_KHNHAN": order.RECEIVER_PHONE,
                "content.$.order.NOI_DUNG_HANG_HOA": order.PRODUCT_NAME,
+               "content.$.order.TIEN_THU_HO": order.MONEY_COLLECTION,
                "content.$.order.TRI_GIA_HANG": order.PRODUCT_PRICE,
                "content.$.order.TRONG_LUONG_GRAM": order.PRODUCT_WEIGHT,
                "content.$.NLP.RECEIVER_PROVINCE": order.RECEIVER_PROVINCE,
