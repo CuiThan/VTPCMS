@@ -218,7 +218,7 @@ var j = schedule.scheduleJob(rule, async function(){
 //  SCHEDULE CHECK ORDER
 var j = schedule.scheduleJob('*/10 * * * * *', function(){
    // console.log('Start check order');
-   checkOrderCronJob();
+   // checkOrderCronJob();
 });
 
 // let list = [];
@@ -358,6 +358,7 @@ function checkOrderCronJob() {
    })
    .catch( err => {
       console.log('Error on checkOrderCronJob function');
+      console.log(err);
       // return res.status(500).send({ status: 500, error: true, message: "error", data: null, log: err });
    })
 
@@ -1297,86 +1298,92 @@ router.post('/upload', exelUpoad.single('file'), function (req, res) {
          }
       }
 
-      if (numberHeaderColumnMatch == standardHeader.length) {
-         //if header of file upload match standard header
-         let list_row_data = [];
-         // console.log('sheet[2] = ', sheet[2]);
-         // console.log('sheet[2] = ', sheet[2].length);
-         let index = 0;
-         // add data of row to array
-         for (let j = 1; j < sheet.length; j++) {
+      if(sheet.length <= 501) {
+          if (numberHeaderColumnMatch == standardHeader.length) {
+             //if header of file upload match standard header
+             let list_row_data = [];
+             // console.log('sheet[2] = ', sheet[2]);
+             // console.log('sheet[2] = ', sheet[2].length);
+             let index = 0;
+             // add data of row to array
+             for (let j = 1; j < sheet.length; j++) {
 
-            let row_data = {};
-            if(sheet[j].length){
-               for (let k = 0; k < standardHeader.length; k++) {
-                  if (standardHeader[k] == "DIEN_THOAI_KHNHAN") {
-                     row_data[standardHeader[k]] = sheet[j][k] ? ( '0' + sheet[j][k] ) : "";
-                  }
-                  else {
-                     row_data[standardHeader[k]] = sheet[j][k] ? sheet[j][k] : "";
-                  }
+                let row_data = {};
+                if(sheet[j].length){
+                   for (let k = 0; k < standardHeader.length; k++) {
+                      if (standardHeader[k] == "DIEN_THOAI_KHNHAN") {
+                         row_data[standardHeader[k]] = sheet[j][k] ? ( sheet[j][k] ) : "";
+                      }
+                      else {
+                         row_data[standardHeader[k]] = sheet[j][k] ? sheet[j][k] : "";
+                      }
 
-               }
-               row_data = {  'ORDER_NUMBER' : '', ...row_data };
+                   }
+                   row_data = {  'ORDER_NUMBER' : '', ...row_data };
 
-               list_row_data[index] = {
-                  "index": j,
-                  "status": "New",
-                  "message": [],
-                  "order": row_data,
-                  "NLP": {
-                     "RECEIVER_WARD": 0,
-                     "RECEIVER_DISTRICT": 0,
-                     "RECEIVER_PROVINCE": 0,
-                  },
-                  "FEE": {
-                     "MONEY_TOTALFEE": 0,
-                     "MONEY_FEE": 0,
-                     "MONEY_FEECOD": 0,
-                     "MONEY_TOTALVAT": 0,
-                     "MONEY_TOTAL": 0,
-                  }
-               }
+                   list_row_data[index] = {
+                      "index": j,
+                      "status": "New",
+                      "message": [],
+                      "order": row_data,
+                      "NLP": {
+                         "RECEIVER_WARD": 0,
+                         "RECEIVER_DISTRICT": 0,
+                         "RECEIVER_PROVINCE": 0,
+                      },
+                      "FEE": {
+                         "MONEY_TOTALFEE": 0,
+                         "MONEY_FEE": 0,
+                         "MONEY_FEECOD": 0,
+                         "MONEY_TOTALVAT": 0,
+                         "MONEY_TOTAL": 0,
+                      }
+                   }
 
-               index ++;
-            }
+                   index ++;
+                }
 
-         }
-         // console.log(inventory);
-         // data structure of row
-         console.log(new Date());
-         var obj = {
-            "header": standardHeader,
-            "inventory": inventory,
-            "content": list_row_data,
-            "cusId": inventory.CUS_ID,
-            "rowCount": sheet.length - 1,
-            "GUI_ID": inventory.GUI_ID,
-            "uploadTime": new Date(),
-            "fileName": req.file.filename,
-            "originalName": req.file.originalname,
-            "status": 'Uploaded',
-            "token": req.headers.token
-         }
-         // complete parse all row to object
-         exelObject.push(obj);
-         // }
+             }
+             // console.log(inventory);
+             // data structure of row
+             console.log(new Date());
+             var obj = {
+                "header": standardHeader,
+                "inventory": inventory,
+                "content": list_row_data,
+                "cusId": inventory.CUS_ID,
+                "rowCount": sheet.length - 1,
+                "GUI_ID": inventory.GUI_ID,
+                "uploadTime": new Date(),
+                "fileName": req.file.filename,
+                "originalName": req.file.originalname,
+                "status": 'Uploaded',
+                "token": req.headers.token
+             }
+             // complete parse all row to object
+             exelObject.push(obj);
+             // }
 
-         UploadExel.create(exelObject, function (err, cb) {
-            if(err) return res.status(500).send({ status: 500, error: true, message: "Can not upload file exel", data: null });
-            return res.status(200).send({status: 200, error: false, message: "Upload file exel success", data: null});
-         })
+             UploadExel.create(exelObject, function (err, cb) {
+                if(err) return res.status(500).send({ status: 500, error: true, message: "Can not upload file exel", data: null });
+                return res.status(200).send({status: 200, error: false, message: "Upload file exel success", data: null});
+             })
+          }
+          else {
+               // if header of file upload not match standard header -> delete file
+                fs.unlink(baseExcelFolderPathByDay + req.file.filename, (err) => {
+                  console.log('successfully deleted ' + baseExcelFolderPathByDay + req.file.filename);
+                  return res.status(200).send({ status:200, message: "File thiếu một trong các cột sau DIEN_THOAI_KHNHAN,TEN_NGUOI_NHAN, "
+                     + "DIACHI_KHNHAN, TINH_DEN, QUAN_DEN, NOI_DUNG_HANG_HOA, TRONG_LUONG_GRAM, TRI_GIA_HANG, "
+                     + "NGUOI_NHAN_TRA_CUOC, TIEN_THU_HO, DICH_VU, DICH_VU_KHAC, XEM_HANG, YEU_CAU_KHI_GIAO, MA_DON_HANG", error: true });
+                });
+
+          }
+      } else {
+          return res.status(200).send({status: 200, error: true, message: "Số đơn trong file tải lên không được lớn hơn 500 đơn", data: null});
       }
-      else {
-           // if header of file upload not match standard header -> delete file
-            fs.unlink(baseExcelFolderPathByDay + req.file.filename, (err) => {
-              console.log('successfully deleted ' + baseExcelFolderPathByDay + req.file.filename);
-              return res.status(200).send({ status:200, message: "File thiếu một trong các cột sau DIEN_THOAI_KHNHAN,TEN_NGUOI_NHAN, "
-                 + "DIACHI_KHNHAN, TINH_DEN, QUAN_DEN, NOI_DUNG_HANG_HOA, TRONG_LUONG_GRAM, TRI_GIA_HANG, "
-                 + "NGUOI_NHAN_TRA_CUOC, TIEN_THU_HO, DICH_VU, DICH_VU_KHAC, XEM_HANG, YEU_CAU_KHI_GIAO, MA_DON_HANG", error: true });
-            });
 
-      }
+
    } else {
       return res.status(400).send({ status:400, message: "File is not choosen", error: true });
    }
@@ -1608,17 +1615,19 @@ router.post('/edit_order_item', async function (req, res) {
             "RECEIVER_PROVINCE": order.RECEIVER_PROVINCE,
             "RECEIVER_DISTRICT": order.RECEIVER_DISTRICT,
             "PRODUCT_TYPE": order.PRODUCT_TYPE,
-            "ORDER_SERVICE": order.ORDER_SERVICE,
-            "ORDER_SERVICE_ADD": order.ORDER_SERVICE_ADD,
+            "ORDER_SERVICE": order.ORDER_SERVICE.trim(),
+            "ORDER_SERVICE_ADD": order.ORDER_SERVICE_ADD.trim(),
             "PRODUCT_WEIGHT": order.PRODUCT_WEIGHT,
             "PRODUCT_PRICE": order.PRODUCT_PRICE,
             "MONEY_COLLECTION": order.MONEY_COLLECTION,
             "PRODUCT_QUANTITY": order.PRODUCT_QUANTITY,
-            "NATIONAL_TYPE": order.NATIONAL_TYPE
-         }
+            "NATIONAL_TYPE": 1
+        };
+        console.log(order_info);
+
          axios.post(GetOrderPriceUrl, order_info)
          .then( response => {
-            // console.log("1365. ", response.data);
+            console.log("1621. ", response.data);
             // console.log("1450", response.error);
             if (response.data.error) {
                return resolve('Bảng giá không áp dụng cho hàng trình này')
@@ -2370,7 +2379,7 @@ router.post('/get_detail', function (req, res) {
                         "ORDER_ACCEPTDATE": 0,
                         "ORDER_SUCCESSDATE": 0,
                         "ORDER_EMPLOYER": -1,
-                        "MONEY_COLLECTION": convertToNumber(item.order.TIEN_THU_HO),
+                        "MONEY_COLLECTION": convertToNumber(item.order.TIEN_THU_HO) + convertToNumber(fee.MONEY_TOTAL),
                         "MONEY_TOTALFEE": fee.MONEY_TOTALFEE,
                         "MONEY_FEECOD": fee.MONEY_FEECOD,
                         "MONEY_FEEVAS": 0,

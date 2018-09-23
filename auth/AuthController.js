@@ -30,22 +30,11 @@ router.get('/verify', function(req, res){
     })
 })
 
-router.get('/generate', function( req, res){
-    // for (let i = 0; i < 3; i++) {
-    //     let salt = bcrypt.genSaltSync(8);
-    //     let hashPwd = bcrypt.hashSync("test" + i, salt);
-    //     User.create({
-    //             username : "test" + i,
-    //             password : hashPwd
-    //         }, function (err, user) {
-    //             if (err) return res.status(500).send(err);
-    //             console.log(i);
-    //             // res.status(200).send({ auth: true, token: token });
-    //         });
-    // }
-       var hashedPassword = bcrypt.hashSync("truyenthong123!@#", 8);
+router.get('/generate/:username/:password', function( req, res){
+    const { username, password } =  req.params;
+    var hashedPassword = bcrypt.hashSync(password, 8);
     ClientApp.create({
-      appId : "daotaotruyenthong",
+      appId : username,
       secretKey : hashedPassword
     },
     function (err, clientApp) {

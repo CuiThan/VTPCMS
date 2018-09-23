@@ -1,13 +1,15 @@
-var express = require('express');
-var router = express.Router();
-var bodyParser = require('body-parser');
-var fs = require('fs');
-var xlsx = require('node-xlsx');
-var axios = require('axios');
-var schedule = require('node-schedule')
-var path = require('path');
+const express = require('express');
+const router = express.Router();
+const bodyParser = require('body-parser');
+const fs = require('fs');
+const axios = require('axios');
+const multer = require('multer');
+const path = require('path');
+const xlsx = require('node-xlsx');
+const jwt = require('jsonwebtoken');
+const schedule = require('node-schedule');
 
-var verify = require('../auth/VerifyToken');
+const verify = require('../auth/VerifyToken');
 var User = require('../dao/user');
 var FacebookUser = require('../dao/facebook-user');
 var Employee = require('../dao/employee');
@@ -16,12 +18,241 @@ var Organization = require('../dao/organization');
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
 
+const baseFbFolderPath = '../VTPCMS/public/facebook/';
+let nextDay = new Date();
+let folderPathOfNextDay = baseFbFolderPath + nextDay.getDate() + '-' + (nextDay.getMonth() + 1) + '-' + nextDay.getFullYear();
+let baseFbFolderPathByDay = folderPathOfNextDay+ '/';
+
+// UPLOAD FILE EXEL
+var exelStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        let nextDay = new Date();
+        let folderPathOfNextDay = baseFbFolderPath + nextDay.getDate() + '-' + (nextDay.getMonth() + 1) + '-' + nextDay.getFullYear();
+        // console.log(folderPathOfNextDay);
+        cb(null, baseFbFolderPath);
+    },
+    filename: function (req, file, cb) {
+        let file_name = Date.now() + '.' + file.originalname.split('.').slice(-1)[0];
+        if (req.headers.token) {
+            var decoded = jwt.decode(req.headers.token);
+            file_name = decoded.UserId + '-' + file_name
+        }
+      cb(null, file_name)
+    }
+});
+
+const exelUpoad = multer({ storage: exelStorage });
+
+router.post('/upload-txt-file', exelUpoad.single('file'), async function (req, res){
+    if (req.file) {
+        return res.status(200).send({ status: 200, error: false, message: "Tải file thành công", filename: req.file.filename });
+    }
+    return res.status(200).send({ status: 200, error: true, message: "Tải file không thành công", data: null });
+});
+
+router.post('/search-by-uid', async function (req, res) {
+    let { list_uid, filename } = req.body;
+    console.log(req.body);
+    if (list_uid != undefined && list_uid.length) {
+        list_uid = list_uid.map( item => {
+            return item.trim();
+        })
+    }
+
+    if(filename != undefined && filename != '') {
+        // if (req.file.size > MAX_FILE_SIZE) {
+        //     // delete file when file size ís large
+        //     fs.unlink(baseFbFolderPathByDay + req.file.filename, (err) => {
+        //         console.log('successfully deleted ' + baseFbFolderPathByDay + req.file.filename);
+        //     });
+        //     return res.status(200).send({ status:200, message: "Dung lượng file không được lớn hơn 1MB", error: true });
+        // }
+        let file_content = await fs.readFileSync(baseFbFolderPath + filename, 'utf-8');
+        // console.log(file_content);
+        file_content = file_content.split('\n');
+        if (file_content.length) {
+            list_uid = file_content.filter( item => {
+                if (item != '' && item != undefined) {
+                    return true;
+                }
+            });
+
+            list_uid = list_uid.map( item => {
+                return item.trim();
+            });
+
+        }
+
+        let nextDay = new Date();
+        let concatPath = nextDay.getDate() + '-' + (nextDay.getMonth() + 1) + '-' + nextDay.getFullYear() + '/';
+        fs.unlink(baseFbFolderPathByDay + filename, (err) => {
+            console.log('successfully deleted ' + baseFbFolderPath + filename);
+        });
+
+    }
+
+    // let excelData = [];
+    // let txtData = [];
+    // let list_users = [];
+    //
+    // excelData.unshift(["UID", "Phone" ]);
+
+
+    if (list_uid != undefined && list_uid.length) {
+        // const sub_array_size = 20000;
+        // let list_sub_array = [];
+        // for (let i = 0; i < list_uid.length; i += sub_array_size) {
+        //    list_sub_array.push(list_uid.slice(i, i + sub_array_size));
+        // }
+        //
+        // console.log(list_sub_array.length);
+        //
+        // try {
+        //     for (let j = 0; j < list_sub_array.length; j++) {
+        //         console.log(j);
+        //         let sub_uid_array = list_sub_array[j];
+        //
+        //         let  users = await getUserFacebook(sub_uid_array);
+        //         console.log(users.length);
+        //         if(users && users.length){
+        //             for ( let index in users) {
+        //                 list_users.push(users[index]);
+        //                 excelData.push([users[index].user_id, users[index].phone]);
+        //                 if (users[index].phone != '') {
+        //                     txtData.push(users[index].phone)
+        //                 }
+        //             }
+        //         }
+        //
+        //     }
+        // } catch (e) {
+        //     console.log(e);
+        //     return res.status(200).send({ status: 200, error: true, message: "Không kết nối được với server", data: list_users });
+        // }
+        //
+        // console.log('lol');
+        //
+        // let buffer = xlsx.build([{name: "Danh sách người dùng facebook", data: excelData }]); // Returns a buffer
+        // // res.attachment('users.xlsx');
+        // let date = new Date();
+        // // let name = 'search-' + date.getTime();
+        // let xlsxFilename = `search-${date.getTime()}.xlsx`;
+        // let txtFilename = `phone-${date.getTime()}.txt`;
+        // exportFileSuccess = false;
+        //
+        // try {
+        //     fs.writeFileSync(`public/facebook/${xlsxFilename}`, buffer);
+        //     exportFileSuccess =  true;
+        // } catch (e) {
+        //     return res.status(200).send({ status: 200, error: true, message: "Không xuất được file excel", data: list_users });
+        // }
+        //
+        // try {
+        //     fs.writeFileSync(`public/facebook/phone-${date.getTime()}.txt`, txtData.join('\n'));
+        //     exportFileSuccess = true;
+        // } catch (e) {
+        //     console.log(e);
+        //     return res.status(200).send({ status: 200, error: true, message: "Không xuất được file txt", data:  list_users});
+        // }
+        //
+        // return res.status(200).send({
+        //     status: 200,
+        //     error: false,
+        //     message: "success",
+        //     data: {
+        //         xlsxFilename: `/facebook/${xlsxFilename}`,
+        //         txtFilename:  `/facebook/${txtFilename}`,
+        //         total: list_uid.length,
+        //         user_found: list_users.length,
+        //         user_not_found: list_uid.length - list_users.length,
+        //         users: list_users
+        //     }
+        // });
+        if (list_uid.length > 50000) {
+            return res.status(400).send({ status: 400, error: true, message: "Số  lượng UID không được quá 50.000", data: null });
+        }
+
+
+
+        FacebookUser.find({ 'user_id': { $in: list_uid } }, function( err, users) {
+            if (err) {
+                console.log(err);
+                return res.status(500).send({ status: 500, error: true, message: "Xảy ra lỗi khi kết nối với server", data: null });
+            }
+            console.log(users);
+
+            if (!users.length) {
+                return res.status(200).send({ status: 200, error: true, message: "Không tìm thấy người dùng nào", data: null });
+            }
+
+            let excelData = [];
+
+            excelData = users.map( item => {
+                return [item.user_id, item.phone ];
+            });
+
+            excelData.unshift(["UID", "Phone" ]);
+
+            let buffer = xlsx.build([{name: "Danh sách người dùng facebook", data: excelData }]); // Returns a buffer
+            // res.attachment('users.xlsx');
+            let date = new Date();
+            // let name = 'search-' + date.getTime();
+            let xlsxFilename = `search-${date.getTime()}.xlsx`;
+            let txtFilename = `phone-${date.getTime()}.txt`;
+            exportFileSuccess = false;
+
+            try {
+                fs.writeFileSync(`public/facebook/${xlsxFilename}`, buffer);
+                exportFileSuccess =  true;
+            } catch (e) {
+                return res.status(200).send({ status: 200, error: true, message: "Không xuất được file excel", data: users });
+            }
+
+            try {
+                let text = [];
+                users.forEach( item => {
+                    if (item.phone != '') {
+                        text.push(item.phone);
+                    }
+                });
+
+                fs.writeFileSync(`public/facebook/phone-${date.getTime()}.txt`, text.join('\n'));
+                exportFileSuccess = true;
+            } catch (e) {
+                return res.status(200).send({ status: 200, error: true, message: "Không xuất được file txt", data: users });
+            }
+
+            return res.status(200).send({
+                status: 200,
+                error: false,
+                message: "success",
+                data: {
+                    xlsxFilename: `/facebook/${xlsxFilename}`,
+                    txtFilename:  `/facebook/${txtFilename}`,
+                    total: list_uid.length,
+                    user_found: users.length,
+                    user_not_found: list_uid.length - users.length,
+                    users: users
+                }
+            });
+        });
+    } else {
+        return res.status(400).send({ status: 400, error: true, message: "Chưa nhập uid hoăc tải file lên", data: null });
+    }
+
+
+
+
+});
+
+
 router.get('/list_all', verify.verifyAppToken, function(req, res){
    User.find({}, function (err, users) {
       if(err) res.status(500).send({ message: "Can not connect to server"});
       res.status(200).send(users);
    })
 });
+
 
 // ****************************** FACEBOOK USER ******************************
 
@@ -94,6 +325,17 @@ router.post('/list-facebook-user/1', function (req, res) {
    })
 });
 
+async function getUserFacebook(list_uid) {
+    return new Promise((resolve, reject) => {
+        FacebookUser.find({ 'user_id': { $in: list_uid } }).exec()
+        .then(data => {
+            resolve(data);
+        })
+        .catch( err => {
+            reject(err);
+        });
+    });
+}
 
 
 function asyncUpdate(i, array) {

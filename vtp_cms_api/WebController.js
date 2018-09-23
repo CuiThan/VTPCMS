@@ -8,6 +8,7 @@ var VerifyToken = require('../auth/VerifyToken');
 var FbAssignSalerToCustomer = require('../models/fb_assign_saler_to_customer');
 var FbConversationDetail = require('../models/fb_conv_detail');
 var FbUserConfig = require('../models/fb_user_config');
+const TestBulk = require('../models/test');
 
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
@@ -57,6 +58,54 @@ var bcrypt = require('bcryptjs');
 var config = require('../config'); // get config file
 
 //Services
+
+router.get('/insert_bulk', function(req, res){
+    let bulkData = [];
+    let obj = {
+        _id: '1_2_3',
+        page_id: 2,
+        channel_id: 4
+    };
+
+    let obj_1 = {
+        _id: '4_5_6',
+        page_id: 4,
+        channel_id: 6
+    };
+    // {
+    //   insertOne: {
+    //     document: {
+    //       name: 'Eddard Stark',
+    //       title: 'Warden of the North'
+    //     }
+    //   }
+    // },
+
+    bulkData.push({
+        'updateOne': {
+            'filter': { _id: '1_2_3' },
+            'update': {
+                page_id: 2,
+                channel_id: 4
+            }
+        }
+    });
+
+    // bulkData.push({
+    //     'insertOne': {'document': obj}
+    // });
+    //
+    // bulkData.push({
+    //     'insertOne': {'document': obj_1}
+    // });
+
+    TestBulk.bulkWrite(bulkData, {
+        'ordered': false
+    }).catch( err => {
+        console.log('inser bulk fail', err);
+    });
+
+});
 
 router.post('/get-homepage', VerifyToken.verifyAppToken, function(req, res) {
    Services.find({ status: 1, displayOnHome : true }).sort({displayOrder: -1}).exec(function (err, services) {
@@ -165,53 +214,46 @@ router.get('/insert_assign', function(req, res){
     })
 });
 
-router.get('/assign', async function(req, res){
-    // FbAssignSalerToCustomer.findOne({ "vtsale_user.id": 456}, function(err, response){
-    //     if (err) {
-    //         console.log(err);
-    //     }console.log(response);
-    // })
-
-
-
-    let list_conv = [ "186059228861263_235984593868726_1738577006191572", "186059228861263_235984593868726_1738577006191572", "1912942668715957_2297514103592143_123324728574301"];
-    for (let i = 0; i < list_conv.length; i++) {
-        // console.log(response);
-        let conv = await FbConversationDetail.findOne({'_id': list_conv[i]}).exec();
-        console.log(conv.assign_to);
-
-        if(conv.assign_to == undefined){
-            // if not assign to saler
-            let list_fb_user = await FbAssignSalerToCustomer.findOne({'vtsale_user.id': 456}).exec();
-
-            if(list_fb_user && list_fb_user.fb_users.length){
-                let list_fb_user_id = list_fb_user.fb_users.map( item => {
-                    return item.id.toString();
-                });
-
-                console.log(list_fb_user_id);
-                console.log(list_fb_user.vtsale_user);
-
-                let assign_saler_response = await FbConversationDetail.updateMany({ 'from.id': { $in: list_fb_user_id }, 'assign_to': { $exists: false} },
-                    { $set : { 'assign_to': list_fb_user.vtsale_user }},
-                    { multiple: true }
-                ).exec();
-
-                if (assign_saler_response.ok == 1) {
-                    console.log('update success');
-                }
-            } else {
-                console.log('get data from FbAssignSalerToCustomer error');
-            }
-            // console.log(list_fb_user);
-        }
-
-
-        // console.log(assign_saler_response);
-    }
-
-
-});
+// router.get('/assign', async function(req, res) {
+//
+//     let list_conv = [ "186059228861263_235984593868726_1738577006191572", "186059228861263_235984593868726_1738577006191572", "1912942668715957_2297514103592143_123324728574301"];
+//     for (let i = 0; i < list_conv.length; i++) {
+//         // console.log(response);
+//         let conv = await FbConversationDetail.findOne({'_id': list_conv[i]}).exec();
+//         console.log(conv.assign_to);
+//
+//         if(conv.assign_to == undefined){
+//             // if not assign to saler
+//             let list_fb_user = await FbAssignSalerToCustomer.findOne({'vtsale_user.id': 456}).exec();
+//
+//             if(list_fb_user && list_fb_user.fb_users.length){
+//                 let list_fb_user_id = list_fb_user.fb_users.map( item => {
+//                     return item.id.toString();
+//                 });
+//
+//                 console.log(list_fb_user_id);
+//                 console.log(list_fb_user.vtsale_user);
+//
+//                 let assign_saler_response = await FbConversationDetail.updateMany({ 'from.id': { $in: list_fb_user_id }, 'assign_to': { $exists: false} },
+//                     { $set : { 'assign_to': list_fb_user.vtsale_user }},
+//                     { multiple: true }
+//                 ).exec();
+//
+//                 if (assign_saler_response.ok == 1) {
+//                     console.log('update success');
+//                 }
+//             } else {
+//                 console.log('get data from FbAssignSalerToCustomer error');
+//             }
+//             // console.log(list_fb_user);
+//         }
+//
+//
+//         // console.log(assign_saler_response);
+//     }
+//
+//
+// });
 
 router.post('/update_user_config', async function (req, res) {
     let { page_id, channel_id, fb_user_id, group } = req.body;

@@ -15,18 +15,20 @@ var FacebookUserSchema = new mongoose.Schema({
    // birthday: Date,
    // about: String,
    // email: String,
-   user_id: {
-      type: String,
-      index: true
-   },
-   phone: {
-      type: String,
-      index: true
-   },
-   status: { type: Number, default: 0 },
-   deactivate: Boolean,
-   info: []
+    user_id: {
+        type: String,
+        index: true
+    },
+    phone: {
+        type: String,
+        index: true
+    },
+    status: { type: Number, default: 0 },
+    deactivate: Boolean,
+    info: []
 });
+
+// FacebookUserSchema.index({ user_id: 1, phone: -1 });
 
 mongoose.model('FacebookUser', FacebookUserSchema);
 

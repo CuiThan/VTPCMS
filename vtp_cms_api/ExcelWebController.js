@@ -176,7 +176,19 @@ var j = schedule.scheduleJob(rule, async function(){
 //  SCHEDULE CHECK ORDER
 var j = schedule.scheduleJob('*/10 * * * * *', function(){
    // console.log('Start check order');
-   ExcelWebRepository.checkOrderCronJob();
+   // ExcelWebRepository.checkOrderCronJob();
+});
+
+router.get('/status/:file_id', function(req, res){
+    const { file_id } = req.params;
+    if (file_id == undefined) {
+        return res.status(400).send({ status: 400, error: true, message: "file_id is undefined", data: null });
+    }
+    ExcelWeb.findOne({ _id: file_id },{ content: 0, token: 0, header: 0, inventory: 0 }, function(err, file) {
+        if(err) return res.status(500).send({ status: 500, error: true, message: "Can not connect to server or query error", data: null });
+        if(!file) return res.status(200).send({ status: 200, error: true, message: `file_id ${file_id} not exists`, data: null });
+        return res.status(200).send({ status: 200, error: false, message: "success", data: file });
+    });
 });
 
 router.post('/upload', exelUpoad.single('file'), function (req, res) {
@@ -321,7 +333,7 @@ router.post('/upload', exelUpoad.single('file'), function (req, res) {
 
          ExcelWeb.create(exelObject, function (err, cb) {
             if(err) return res.status(500).send({ status: 500, error: true, message: "Can not upload file exel", data: null });
-            return res.status(200).send({status: 200, error: false, message: "Upload file exel success", data: null});
+            return res.status(200).send({status: 200, error: false, message: "Upload file exel success", file_id: cb[0]._id});
          })
       }
       else {
@@ -1101,7 +1113,7 @@ router.post('/get_detail', function (req, res) {
          let numberOrderMatchStatus = 0;
 
          if (list_status.length == 0) {
-            list_status = ["New", "Processing", "NLPError", "ValidateError", "ValidateSuccess", "CreateOrderError", "Completed"];
+            list_status = ["New", "Error", "Processing", "NLPError", "ValidateError", "ValidateSuccess", "CreateOrderError", "Completed"];
          }
 
          for (let i = 0; i < history.content.length; i++) {
