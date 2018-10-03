@@ -176,7 +176,7 @@ var j = schedule.scheduleJob(rule, async function(){
 //  SCHEDULE CHECK ORDER
 var j = schedule.scheduleJob('*/10 * * * * *', function(){
    // console.log('Start check order');
-   // ExcelWebRepository.checkOrderCronJob();
+   ExcelWebRepository.checkOrderCronJob();
 });
 
 router.get('/status/:file_id', function(req, res){
@@ -465,7 +465,7 @@ router.get('/list_all', function(req, res){
        ];
 
        excelData.push(header);
-        
+
         for (let i in list_order ){
 
             for(let j in list_order[i].content) {

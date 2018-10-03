@@ -1,5 +1,6 @@
 var mongoose = require('mongoose');
-mongoose.connect('mongodb://vtpcrawler:123456a%40@125.212.238.119:27017/vtpcrawler', { useMongoClient: true });
+var connection = mongoose.createConnection('mongodb://vtpcrawler:123456a%40@125.212.238.119:27017/vtpcrawler');
+
 var FacebookUserCrawler = new mongoose.Schema({
     _id: String,
     name: String,
@@ -11,6 +12,6 @@ var FacebookUserCrawler = new mongoose.Schema({
     collection: 'facebookPage'
 });
 
-mongoose.model('FacebookUserCrawler', FacebookUserCrawler);
+connection.model('FacebookUserCrawler', FacebookUserCrawler);
 
-module.exports = mongoose.model('FacebookUserCrawler');
+module.exports = connection.model('FacebookUserCrawler');

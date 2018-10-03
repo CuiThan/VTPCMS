@@ -28,7 +28,7 @@ class ExcelWebRepository {
             return res.status(200).send({ status: 200, error: true, message: "no file changed", data: null });
         })
         .then( updateResult => {
-            console.log(updateResult);
+            // console.log(updateResult);
             if (updateResult) {
                 return ExcelWeb.find({ status: "Processing" }).exec();
             }
