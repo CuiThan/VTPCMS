@@ -92,7 +92,7 @@ module.exports = {
    },
 
    IsPhoneNumber: function(phone) {
-      let regex  = new RegExp("0?(9[0|1|2|3|4|6|7|8]|1[5|2|6][0-9]|18[6|8]|08[6|8])+([0-9]{7})");
+      let regex  = new RegExp("0?(9[0-9]|1[5|2|6][0-9]|18[6|8]|08[0-9]|03[0-9]|07[0|6|7|8|9])+([0-9]{7})");
       // let regex  = "0(9[0|1|2|3|4|6|7|8]|1[5|2|6][0-9]|18[6|8]|08[6|8])+([0-9]{7})";
       if(phone.toString().search(regex) == 0) return true;
       return false;

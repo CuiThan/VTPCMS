@@ -1,5 +1,7 @@
 node_modules
 
+public/*
+
 public/images
 
 public/audios

@@ -433,7 +433,80 @@ router.post('/export', function(req, res) {
       });
       // res.send(buffer);
    })
-})
+});
+
+router.get('/list_all', function(req, res){
+   ExcelWeb.find({}, function(err, list_order){
+        if (err) {
+            console.log('error', err);
+            return res.status(500).send({ status: 500, error: true, message: err })
+        }
+
+        let excelData = [];
+        console.log(list_order.length);
+
+       let header = [
+           'DIEN_THOAI_KHNHAN',
+           'TEN_NGUOI_NHAN',
+           'DIACHI_KHNHAN',
+           'TINH_DEN',
+           'QUAN_DEN',
+           'NOI_DUNG_HANG_HOA',
+           'TRONG_LUONG_GRAM',
+           'TRI_GIA_HANG',
+           'NGUOI_NHAN_TRA_CUOC',
+           'TIEN_THU_HO',
+           'DICH_VU',
+           'DICH_VU_KHAC',
+           'XEM_HANG',
+           'YEU_CAU_KHI_GIAO',
+           'MA_DON_HANG',
+           'ORDER_NUMBER'
+       ];
+
+       excelData.push(header);
+        
+        for (let i in list_order ){
+
+            for(let j in list_order[i].content) {
+                let row = list_order[i].content[j].order;
+                // row = row.order;
+                // console.log(row);
+                if (row && row.ORDER_NUMBER != '') {
+                    let rowExcel = [];
+                    for (let j = 0; j < header.length; j++) {
+                        rowExcel.push(row[header[j]]);
+                    }
+
+                    // add all row to excel file
+                    excelData.push(rowExcel);
+                }
+
+            }
+        }
+
+       let date = new Date();
+       let name = 'list-all-' + date.getTime();
+       let filename = `${name}.xlsx`;
+       let buffer = xlsx.build([{name: "List Order", data: excelData }]); // Returns a buffer
+       fs.writeFile(`public/web-xlsx/${filename}`, buffer, function (err) {
+          if (err) {
+              return res.status(500).send({ status: 500, error: true, message: err })
+          }
+
+          else {
+              let buff = new Buffer(`/web-xlsx/${filename}`);
+              return res.status(200).send({
+                  status: 200,
+                  error: false,
+                  message: "success",
+                  download_url: '/download/' + buff.toString('base64'),
+                  data: { download_url: '/download/' + buff.toString('base64') }
+              });
+          }
+       });
+   });
+});
 
 // router.get('/download/:code', function(req, res) {
 //     console.log(req.params.code);

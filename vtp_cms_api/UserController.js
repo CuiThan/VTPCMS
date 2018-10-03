@@ -12,6 +12,7 @@ const schedule = require('node-schedule');
 const verify = require('../auth/VerifyToken');
 var User = require('../dao/user');
 var FacebookUser = require('../dao/facebook-user');
+const FacebookUserCrawler = require('../dao/facebook-crawler');
 var Employee = require('../dao/employee');
 var Organization = require('../dao/organization');
 
@@ -85,9 +86,9 @@ router.post('/search-by-uid', async function (req, res) {
 
         let nextDay = new Date();
         let concatPath = nextDay.getDate() + '-' + (nextDay.getMonth() + 1) + '-' + nextDay.getFullYear() + '/';
-        fs.unlink(baseFbFolderPathByDay + filename, (err) => {
-            console.log('successfully deleted ' + baseFbFolderPath + filename);
-        });
+        // fs.unlink(baseFbFolderPathByDay + filename, (err) => {
+        //     console.log('successfully deleted ' + baseFbFolderPath + filename);
+        // });
 
     }
 
@@ -173,8 +174,12 @@ router.post('/search-by-uid', async function (req, res) {
         }
 
 
-
-        FacebookUser.find({ 'user_id': { $in: list_uid } }, function( err, users) {
+        console.log(list_uid);
+        list_uid = ["100004433321360",
+            "100015450037770"
+        ];
+        // { 'user_id': { $in: list_uid } }
+        FacebookUser.find({ "phone": "841287951903" }, function( err, users) {
             if (err) {
                 console.log(err);
                 return res.status(500).send({ status: 500, error: true, message: "Xảy ra lỗi khi kết nối với server", data: null });
@@ -189,7 +194,7 @@ router.post('/search-by-uid', async function (req, res) {
 
             excelData = users.map( item => {
                 return [item.user_id, item.phone ];
-            });
+             });
 
             excelData.unshift(["UID", "Phone" ]);
 
@@ -212,9 +217,9 @@ router.post('/search-by-uid', async function (req, res) {
                 let text = [];
                 users.forEach( item => {
                     if (item.phone != '') {
-                        text.push(item.phone);
-                    }
-                });
+                    text.push(item.phone);
+                }
+            });
 
                 fs.writeFileSync(`public/facebook/phone-${date.getTime()}.txt`, text.join('\n'));
                 exportFileSuccess = true;
@@ -277,6 +282,45 @@ router.get('/list-facebook-user/:page', function (req, res) {
       })
    })
 });
+
+router.get('/get-facebook-user/:pageIndex', function(req, res){
+    const pageIndex = req.params.pageIndex;
+    const pageSize = 24;
+    if (pageIndex == undefined) {
+        return res.status(400).send({ status: 400, error: true, message: "Chưa chọn trang", data: null });
+    }
+    FacebookUserCrawler.find({}).skip(pageSize * (pageIndex -1)).limit(pageSize).exec(function(err, user){
+        if (err) return res.status(500).send({status: 500, message: 'Không kết nối được đến server', error: true, data: null });
+        return res.status(200).send({status: 200, message: 'success', error: false, data: user });
+    });
+});
+
+router.get('/get-number-facebook-user', function(req, res){
+    FacebookUserCrawler.count().exec(function(err, count) {
+        if (err) return res.status(500).send({status: 500, message: 'Không kết nối được đến server', error: true, data: null });
+        return res.status(200).send({status: 200, message: 'success', error: false, data: count });
+    });
+});
+
+router.post('/search-facebook-user', function(req, res){
+    const uid =  req.body.uid;
+    if (uid == undefined) {
+        return res.status(400).send({ status: 400, error: true, message: "Chưa nhập ID của nguời dùng", data: null });
+    }
+    if (uid.trim() == '') {
+        FacebookUserCrawler.find({}).limit(24).exec(function(err, user){
+            if (err) return res.status(500).send({status: 500, message: 'Không kết nối được đến server', error: true, data: null });
+            return res.status(200).send({status: 200, message: 'success', error: false, data: user });
+        });
+    } else {
+        FacebookUserCrawler.find({ _id: uid.trim() }).exec(function(err, count) {
+            if (err) return res.status(500).send({status: 500, message: 'Không kết nối được đến server', error: true, data: null });
+            return res.status(200).send({status: 200, message: 'success', error: false, data: count });
+        });
+    }
+
+});
+
 
 router.post('/list-facebook-user/1', function (req, res) {
    // router.post('/facbook-search', function (req, res) {

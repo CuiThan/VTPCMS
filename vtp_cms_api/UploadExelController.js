@@ -218,7 +218,7 @@ var j = schedule.scheduleJob(rule, async function(){
 //  SCHEDULE CHECK ORDER
 var j = schedule.scheduleJob('*/10 * * * * *', function(){
    // console.log('Start check order');
-   // checkOrderCronJob();
+   checkOrderCronJob();
 });
 
 // let list = [];
@@ -2337,6 +2337,23 @@ router.post('/get_detail', function (req, res) {
                      } else {
                         order_payment = 3;
                      }
+
+                     // let money_collection = item.order.TIEN_THU_HO;
+                      let money_collection = 0;
+
+                     switch (order_payment) {
+                         case 1:
+                             money_collection = 0;
+                             break;
+                         case 2:
+                             money_collection = convertToNumber(item.order.TIEN_THU_HO) + convertToNumber(fee.MONEY_TOTAL);
+                             break;
+                         default:
+                             money_collection = convertToNumber(fee.MONEY_TOTAL);
+                     }
+                     // if (order_payment == 2) {
+                     //     money_collection = convertToNumber(item.order.TIEN_THU_HO) + convertToNumber(fee.MONEY_TOTAL);
+                     // }
                      let order_detail = {
                         "ORDER_NUMBER": item.order.ORDER_NUMBER,
                         "ORDER_REFERENCE": item.order.MA_DON_HANG ? item.order.MA_DON_HANG : "",
@@ -2379,7 +2396,7 @@ router.post('/get_detail', function (req, res) {
                         "ORDER_ACCEPTDATE": 0,
                         "ORDER_SUCCESSDATE": 0,
                         "ORDER_EMPLOYER": -1,
-                        "MONEY_COLLECTION": convertToNumber(item.order.TIEN_THU_HO) + convertToNumber(fee.MONEY_TOTAL),
+                        "MONEY_COLLECTION": money_collection,
                         "MONEY_TOTALFEE": fee.MONEY_TOTALFEE,
                         "MONEY_FEECOD": fee.MONEY_FEECOD,
                         "MONEY_FEEVAS": 0,

@@ -8,7 +8,7 @@ var VerifyToken = require('../auth/VerifyToken');
 var FbAssignSalerToCustomer = require('../models/fb_assign_saler_to_customer');
 var FbConversationDetail = require('../models/fb_conv_detail');
 var FbUserConfig = require('../models/fb_user_config');
-const TestBulk = require('../models/test');
+// const TestBulk = require('../models/test');
 
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
@@ -99,11 +99,11 @@ router.get('/insert_bulk', function(req, res){
     //     'insertOne': {'document': obj_1}
     // });
 
-    TestBulk.bulkWrite(bulkData, {
-        'ordered': false
-    }).catch( err => {
-        console.log('inser bulk fail', err);
-    });
+    // TestBulk.bulkWrite(bulkData, {
+    //     'ordered': false
+    // }).catch( err => {
+    //     console.log('inser bulk fail', err);
+    // });
 
 });
 
